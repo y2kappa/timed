@@ -1,4 +1,14 @@
-## Timeit
+# 🦀 Rust `Timeit` macro to time function execution
+
+
+
+## Usage
+
+- Coming soon, currently on master only.
+```toml
+[dependencies]
+timeit = "*"
+```
 
 ```rust
 extern crate timeit;
@@ -23,6 +33,9 @@ fn timing() {
 }
 ```
 
+
+Output:
+
 ```
 $ cargo test -- --nocapture
 running 1 test
@@ -35,6 +48,9 @@ test timing ... ok
 ```
 
 foobar, foo, bar, baz, qux, quux, quuz, corge, grault, garply, waldo, fred, plugh, xyzzy, and thud, Wibble, wobble, wubble, and flob
+
+## Contribution
+Contributions are welcome. Please submit PR.
 
 ## TODO:
 - [ ] attribute to macro such as log level if needed
