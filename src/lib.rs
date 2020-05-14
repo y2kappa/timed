@@ -1,3 +1,17 @@
+//! # Timed
+//!
+//! Macros for measuring function execution.
+//! ```
+//! #[timed::timed]
+//! fn add(x: i32, y: i32) -> i32 {
+//!     x + y
+//! }
+//! ```
+//! It will output:
+//! ```
+//! function=add duration=112ns
+//! ```
+
 extern crate proc_macro;
 
 use proc_macro2::{Span, TokenTree,
@@ -94,8 +108,51 @@ impl Function {
     }
 }
 
+/// Times the execution of the function
+///
+/// # Examples
+///
+/// ```
+/// #[timed::timed]
+/// fn add(x: i32, y: i32) -> i32 {
+///     x + y
+/// }
+/// ```
+///
+/// It will output:
+/// ```
+/// function=add duration=112ns
+/// ```
+///
+/// The implementation renames the given function
+/// by sufixing it with `_impl_` so in this case
+/// you will have `fn _impl_add(x:i32, y:i32)`
+/// and creates a new function with the original name.
+///
+/// Thie is the final output after the macro expands:
+/// ```
+/// fn _impl_add(x:i32, y:i32) -> i32 {
+///     x + y
+/// }
+///
+/// fn add(x: i32, y:i32) -> i32 {
+///     use std::time::Instant;
+///     let _start = Instant::now();
+///     let res = _impl_add(x, y);
+///     println!("function={} duration={:?}", "add", start.elapsed());
+///     res
+/// }
+/// ```
+///
+/// Currently it works with functions passed by value only, or no
+/// parameters at all.
+///
+/// Work in progress to cover more cases.
+///
+///
+
 #[proc_macro_attribute]
-pub fn timeit(
+pub fn timed(
     _args: proc_macro::TokenStream,
     input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 

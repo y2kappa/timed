@@ -1,34 +1,34 @@
 use std::{thread, time};
 
-#[timeit::timeit]
+#[timed::timed]
 fn foo(x: i32, y :i32) -> i32 {
     thread::sleep(time::Duration::from_millis(100));
     x + y
 }
 
-#[timeit::timeit]
+#[timed::timed]
 fn bar(x: i32) -> i32 {
     thread::sleep(time::Duration::from_millis(100));
     x
 }
 
-#[timeit::timeit]
+#[timed::timed]
 fn baz() -> i32 {
     // thread::sleep(time::Duration::from_millis(100));
     42
 }
 
-#[timeit::timeit]
+#[timed::timed]
 fn foobar() {
     thread::sleep(time::Duration::from_millis(100));
 }
 
-#[timeit::timeit]
+#[timed::timed]
 fn add(x: i32, y: i32) -> i32 {
     x + y
 }
 
-#[timeit::timeit]
+#[timed::timed]
 fn mul(x: i32, y: i32) -> i32 {
     x * y
 }

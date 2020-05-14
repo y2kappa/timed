@@ -1,4 +1,4 @@
-# 🦀 Rust `Timeit` macro to time function execution
+# Rust `timed` macro to time function execution
 
 
 
@@ -13,12 +13,12 @@ timeit = "*"
 ```rust
 extern crate timeit;
 
-#[timeit::timeit]
+#[timed::timed]
 fn add(x: i32, y: i32) -> i32 {
     x + y
 }
 
-#[timeit::timeit]
+#[timed::timed]
 fn mul(x: i32, y: i32) -> i32 {
     x * y
 }
@@ -26,9 +26,7 @@ fn mul(x: i32, y: i32) -> i32 {
 
 #[test]
 fn timing() {
-
     assert_eq!(add(1, 2), 3);
-
     assert_eq!(mul(1, 2), 2);
 }
 ```
@@ -55,6 +53,8 @@ Contributions are welcome. Please submit PR.
 ## TODO:
 - [ ] attribute to macro such as log level if needed
 - [ ] formatting ``fn=name dur=25sec``
+- [ ] inspect https://github.com/gustavla/timeit/pulls.
+- [ ] add timeit macro for blocks
 
 ## References
 - https://github.com/dtolnay/quote
