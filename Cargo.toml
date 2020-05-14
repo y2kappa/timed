@@ -2,6 +2,14 @@
 name = "timed"
 version = "0.1.0"
 edition = "2018"
+description = "Macros to time function execution"
+license = "MIT OR Apache-2.0"
+authors = ["Cedric Sanchez"]
+repository = "https://github.com/y2kappa/timed"
+include = [
+    "**/lib.rs",
+    "Cargo.toml",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
