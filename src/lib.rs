@@ -9,7 +9,7 @@
 //! ```
 //! It will output:
 //! ```
-//! function=add duration=112ns
+//! // function=add duration=112ns
 //! ```
 
 extern crate proc_macro;
@@ -121,7 +121,7 @@ impl Function {
 ///
 /// It will output:
 /// ```
-/// function=add duration=112ns
+/// // function=add duration=112ns
 /// ```
 ///
 /// The implementation renames the given function
@@ -139,7 +139,7 @@ impl Function {
 ///     use std::time::Instant;
 ///     let _start = Instant::now();
 ///     let res = _impl_add(x, y);
-///     println!("function={} duration={:?}", "add", start.elapsed());
+///     println!("function={} duration={:?}", "add", _start.elapsed());
 ///     res
 /// }
 /// ```
@@ -259,3 +259,4 @@ pub fn timed(
     let res : proc_macro::TokenStream = result.into();
     proc_macro::TokenStream::from(res)
 }
+

@@ -8,14 +8,14 @@ authors = ["Cedric Sanchez"]
 repository = "https://github.com/y2kappa/timed"
 include = [
     "**/lib.rs",
+    "**/tests/smoke.rs",
     "Cargo.toml",
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-quote = "*"
-syn = "*"
+quote = "1.0.5"
 proc-macro2 = "1.0.12"
 
 
