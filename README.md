@@ -4,14 +4,13 @@
 
 ## Usage
 
-- Coming soon, currently on master only.
 ```toml
 [dependencies]
-timeit = "*"
+timed = "*"
 ```
 
 ```rust
-extern crate timeit;
+extern crate timed;
 
 #[timed::timed]
 fn add(x: i32, y: i32) -> i32 {
@@ -53,8 +52,8 @@ Contributions are welcome. Please submit PR.
 ## TODO:
 - [ ] attribute to macro such as log level if needed
 - [ ] formatting ``fn=name dur=25sec``
-- [ ] inspect https://github.com/gustavla/timeit/pulls.
-- [ ] add timeit macro for blocks
+- [ ] inspect https://github.com/gustavla/timeit/pulls see how to combine
+- [ ] add timeit macro for blocks (looks like already done)
 
 ## References
 - https://github.com/dtolnay/quote
