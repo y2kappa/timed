@@ -1,7 +1,6 @@
 # Rust `timed` macro to time function execution
 
 
-
 ## Usage
 
 ```toml
@@ -44,16 +43,22 @@ function=mul duration=97ns
 test timing ... ok
 ```
 
-foobar, foo, bar, baz, qux, quux, quuz, corge, grault, garply, waldo, fred, plugh, xyzzy, and thud, Wibble, wobble, wubble, and flob
-
 ## Contribution
 Contributions are welcome. Please submit PR.
 
 ## TODO:
-- [ ] attribute to macro such as log level if needed
+- [x] Add and test async
+- [x] Use syn, remove manual parser
+- [ ] Attribute to macro such as log level if needed:
+    - macro/function to call when timing such as "info", "println", "lambda"
 - [ ] formatting ``fn=name dur=25sec``
+- [ ] add possibility to print start, end 
+    - [ ] eventually generate flamegraph out of it 
+    - [ ] or (vertical) timegraph with overlaps
 - [ ] inspect https://github.com/gustavla/timeit/pulls see how to combine
-- [ ] add timeit macro for blocks (looks like already done)
+- [ ] add timed macro for blocks 
+    - timeit does it many times (looks like already done)
+    - this is just for profiling
 
 ## References
 - https://github.com/dtolnay/quote
