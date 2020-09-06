@@ -11,47 +11,40 @@
 //! ```
 //! // function=add duration=112ns
 //! ```
+//! Times the execution of the function
+//!
+//! # Examples
+//!
+//! ```
+//! use timed::timed;
+//!
+//! #[timed]
+//! fn add(x: i32, y: i32) -> i32 {
+//!     x + y
+//! }
+//!
+//! #[timed(printer = "println!")]
+//! async fn google()  {
+//!     // reqwest::get("https://google.com").await;
+//! }
+//! ```
+//!
+//! ```ignore
+//! #[timed(printer = "info!")]
+//! fn add_info(x: i32, y: i32) -> i32 {
+//!     x + y
+//! }
+//! ```
+//!
+//! ```ignore
+//! #[tokio::main]
+//! #[timed]
+//! async fn main() {
+//!     reqwest::get("https://google.com").await;
+//! }
+//!
+//! ```
 
-
-/// Times the execution of the function
-///
-/// # Examples
-///
-/// ```
-/// use timed::timed;
-///
-/// #[timed]
-/// fn add(x: i32, y: i32) -> i32 {
-///     x + y
-/// }
-///
-/// #[timed(printer = "println!")]
-/// async fn google()  {
-///     // reqwest::get("https://google.com").await;
-/// }
-/// ```
-///
-/// ```compile_fail
-/// #[timed(printer = "info!")]
-/// fn add_info(x: i32, y: i32) -> i32 {
-///     x + y
-/// }
-/// ```
-///
-/// ```compile_fail
-/// #[tokio::main]
-/// #[timed]
-/// async fn main() {
-///     reqwest::get("https://google.com").await;
-/// }
-///
-/// ```
-///
-/// It will output:
-/// ```
-/// // function=add duration=112ns
-/// ```
-///
 
 use darling::FromMeta;
 use proc_macro::TokenStream;
@@ -90,10 +83,20 @@ fn printer(options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::Toke
     }
 }
 
+/// Macro that times your function execution.
 #[proc_macro_attribute]
 pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
+    //! ```text
+    //! Call this using #[timed]
+    //! It will print by default with `println!`
+    //! If you want to change the printer you can use #[timed(printer = "info!")]
+    //! or any other macro or function that takes in a String.`
+    //! ```
+    //!
+    //! ```ignore
+    //! #[timed(printer = "println!")]
+    //! ```
     // debug!("Args {:?}", args);
-
     let options = syn::parse_macro_input!(args as AttributeArgs);
     let function = syn::parse_macro_input!(input as ItemFn);
 
