@@ -1,7 +1,9 @@
 # Rust `timed` macro to time function execution
 
 ✅ Works with `async`
+
 ✅ Works with `main`
+
 ✅ Custom printers, like `println!`, `info!`, or your own function.
 
 ## Usage
@@ -60,7 +62,7 @@ test timing ... ok
 
 Also works with main and tokio:
 
-```rs 
+```rust
 #[tokio::main]
 #[timed]
 async fn main() {
