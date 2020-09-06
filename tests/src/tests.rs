@@ -1,46 +1,70 @@
 use std::{thread, time};
 use timed::timed;
 
+use std::sync::Once;
+static INIT: Once = Once::new();
+
+/// Setup function that is only run once, even if called multiple times.
+fn init_logger() {
+    INIT.call_once(|| {
+        pretty_env_logger::init();
+    });
+}
+
 #[timed]
 fn foo(x: i32, y: i32) -> i32 {
     thread::sleep(time::Duration::from_millis(100));
     x + y
 }
 
-#[timed::timed]
+#[timed]
 fn bar(x: i32) -> i32 {
     thread::sleep(time::Duration::from_millis(100));
     x
 }
 
-#[timed::timed]
-fn baz() -> i32 {
-    // thread::sleep(time::Duration::from_millis(100));
-    42
-}
+#[timed]
+fn baz() -> i32 { 42 }
 
-#[timed::timed]
+#[timed]
 fn foobar() {
     thread::sleep(time::Duration::from_millis(100));
 }
 
-#[timed::timed]
+#[timed]
 fn add(x: i32, y: i32) -> i32 {
     x + y
 }
 
-#[timed::timed]
+#[timed]
 fn mul(x: i32, y: i32) -> i32 {
     x * y
 }
 
-#[timed::timed]
-fn add2(x: i32, y: i32) -> i32 {
-    x + y
+#[timed(printer = "println!")]
+fn mul_println(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+#[timed(printer = "info!")]
+fn mul_info(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+#[timed(printer = "error!")]
+fn mul_error(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+#[timed]
+async fn ping_google() {
+    let _ = reqwest::get("https://google.com")
+        .await
+        .unwrap();
 }
 
 #[test]
-fn works() {
+fn simple() {
     foo(1, 2);
     bar(1);
     baz();
@@ -51,7 +75,20 @@ fn works() {
 }
 
 #[test]
-fn work2() {
-    println!("Calling function add2 by its name");
-    add2(2, 3);
+fn with_logging() {
+    init_logger();
+
+    mul_info(1, 1);
+    mul_info(1, 1);
+    mul_error(1, 1);
+}
+
+#[tokio::test]
+async fn with_async() {
+    ping_google().await
+}
+
+#[tokio::test]
+async fn test_async_quotes() {
+    crate::get_random_quote().await
 }

@@ -1,6 +1,6 @@
+#[macro_use] extern crate log;
 use serde::Deserialize;
 use timed::timed;
-
 mod tests;
 
 #[derive(Deserialize, Debug)]
@@ -10,12 +10,14 @@ struct Quote {
 }
 
 #[tokio::main]
+#[timed]
 async fn main() {
+    println!("Running main");
     get_random_quote().await
 }
 
 #[timed]
-async fn get_random_quote() {
+pub async fn get_random_quote() {
     let url = "https://type.fit/api/quotes";
     println!("Calling {}", url);
 
@@ -27,12 +29,8 @@ async fn get_random_quote() {
         .unwrap();
 
     println!(
-        "Quote of the day: \n\"{:?}\" - {:?}",
-        quotes[0].text, quotes[0].author
+        "Quote of the day: \n{} - {}",
+        quotes[0].text.as_ref().unwrap(),
+        quotes[0].author.as_ref().unwrap()
     );
-}
-
-#[tokio::test]
-async fn test_async() {
-    get_random_quote().await
 }

@@ -52,6 +52,7 @@ Contributions are welcome. Please submit PR.
 - [ ] Attribute to macro such as log level if needed:
     - macro/function to call when timing such as "info", "println", "lambda"
 - [ ] formatting ``fn=name dur=25sec``
+    - allow for custom formatting
 - [ ] add possibility to print start, end 
     - [ ] eventually generate flamegraph out of it 
     - [ ] or (vertical) timegraph with overlaps
@@ -59,6 +60,8 @@ Contributions are welcome. Please submit PR.
 - [ ] add timed macro for blocks 
     - timeit does it many times (looks like already done)
     - this is just for profiling
+
+- [ ] can have a global state (for testing maybe) that tracks how many times something was called
 
 ## References
 - https://github.com/dtolnay/quote
