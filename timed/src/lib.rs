@@ -12,16 +12,39 @@
 //! // function=add duration=112ns
 //! ```
 
-use darling::FromMeta;
+
 /// Times the execution of the function
 ///
 /// # Examples
 ///
 /// ```
-/// #[timed::timed]
+/// use timed::timed;
+///
+/// #[timed]
 /// fn add(x: i32, y: i32) -> i32 {
 ///     x + y
 /// }
+///
+/// #[timed(printer = "println!")]
+/// async fn google()  {
+///     // reqwest::get("https://google.com").await;
+/// }
+/// ```
+///
+/// ```compile_fail
+/// #[timed(printer = "info!")]
+/// fn add_info(x: i32, y: i32) -> i32 {
+///     x + y
+/// }
+/// ```
+///
+/// ```compile_fail
+/// #[tokio::main]
+/// #[timed]
+/// async fn main() {
+///     reqwest::get("https://google.com").await;
+/// }
+///
 /// ```
 ///
 /// It will output:
@@ -29,27 +52,8 @@ use darling::FromMeta;
 /// // function=add duration=112ns
 /// ```
 ///
-/// The implementation renames the given function
-/// by sufixing it with `_impl_` so in this case
-/// you will have `fn _impl_add(x:i32, y:i32)`
-/// and creates a new function with the original name.
-///
-/// Thie is the final output after the macro expands:
-/// ```
-/// fn _impl_add(x:i32, y:i32) -> i32 {
-///     x + y
-/// }
-///
-/// fn add(x: i32, y:i32) -> i32 {
-///     use std::time::Instant;
-///     let _start = Instant::now();
-///     let res = _impl_add(x, y);
-///     println!("function={} duration={:?}", "add", _start.elapsed());
-///     res
-/// }
-/// ```
-///
-/// Coverage: any function type. No issues known.
+
+use darling::FromMeta;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
