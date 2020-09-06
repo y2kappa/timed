@@ -2,7 +2,6 @@
 
 ✅ Works with `async`
 ✅ Works with `main`
-✅ Works with `async`
 ✅ Custom printers, like `println!`, `info!`, or your own function.
 
 ## Usage
