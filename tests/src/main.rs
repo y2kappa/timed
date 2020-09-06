@@ -1,4 +1,5 @@
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 use serde::Deserialize;
 use timed::timed;
 mod tests;

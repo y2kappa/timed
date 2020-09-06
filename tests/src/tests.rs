@@ -24,7 +24,9 @@ fn bar(x: i32) -> i32 {
 }
 
 #[timed]
-fn baz() -> i32 { 42 }
+fn baz() -> i32 {
+    42
+}
 
 #[timed]
 fn foobar() {
@@ -58,7 +60,7 @@ fn mul_error(x: i32, y: i32) -> i32 {
 
 #[timed]
 async fn ping_google() {
-    reqwest::get("https://google.com").await;
+    reqwest::get("https://google.com").await.unwrap();
 }
 
 #[test]

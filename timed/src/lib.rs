@@ -64,7 +64,7 @@ struct MacroArgs {
 fn printer(options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::TokenStream {
     let (printer, needs_bang) = match &options.printer {
         Some(printer) => {
-            if printer.chars().last() == Some('!') {
+            if printer.ends_with('!') {
                 (&printer[..&printer.len() - 1], true)
             } else {
                 (printer.as_str(), false)
@@ -123,5 +123,5 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     let res: proc_macro::TokenStream = result.into();
-    proc_macro::TokenStream::from(res)
+    res
 }
