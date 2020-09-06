@@ -58,9 +58,7 @@ fn mul_error(x: i32, y: i32) -> i32 {
 
 #[timed]
 async fn ping_google() {
-    let _ = reqwest::get("https://google.com")
-        .await
-        .unwrap();
+    reqwest::get("https://google.com").await;
 }
 
 #[test]
