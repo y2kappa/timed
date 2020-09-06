@@ -10,7 +10,7 @@
 
 ```toml
 [dependencies]
-timed = "0.1.1"
+timed = "0.1.2"
 log = "0.4"
 ```
 
