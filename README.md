@@ -1,24 +1,38 @@
 # Rust `timed` macro to time function execution
 
-
+✅ Works with `async`
+✅ Works with `main`
+✅ Custom printers, like `println!`, `info!`, or your own function.
 
 ## Usage
 
 ```toml
 [dependencies]
-timed = "*"
+timed = "0.1.1"
+log = "0.4"
 ```
 
 ```rust
-extern crate timed;
+use timed::timed;
+#[macro_use] extern crate log;
 
 #[timed::timed]
 fn add(x: i32, y: i32) -> i32 {
     x + y
 }
 
-#[timed::timed]
+#[timed]
 fn mul(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+#[timed(printer = "println!")]
+fn mul_println(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+#[timed(printer = "info!")]
+fn mul_info(x: i32, y: i32) -> i32 {
     x * y
 }
 
@@ -44,18 +58,17 @@ function=mul duration=97ns
 test timing ... ok
 ```
 
-foobar, foo, bar, baz, qux, quux, quuz, corge, grault, garply, waldo, fred, plugh, xyzzy, and thud, Wibble, wobble, wubble, and flob
+Also works with main and tokio:
+
+```rs 
+#[tokio::main]
+#[timed]
+async fn main() {
+    println!("Running main");
+    reqwest::get("https://google.com").await;
+}
+```
 
 ## Contribution
 Contributions are welcome. Please submit PR.
-
-## TODO:
-- [ ] attribute to macro such as log level if needed
-- [ ] formatting ``fn=name dur=25sec``
-- [ ] inspect https://github.com/gustavla/timeit/pulls see how to combine
-- [ ] add timeit macro for blocks (looks like already done)
-
-## References
-- https://github.com/dtolnay/quote
-- https://github.com/alexcrichton/proc-macro2#usage
-
+See [TODO](TODO.md)
