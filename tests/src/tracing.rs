@@ -17,9 +17,13 @@ struct Tracing;
 impl Drop for Tracing {
     fn drop(&mut self) {
         let traces = TRACES.lock().unwrap();
-        for trace in &*traces {
-            println!("{},", trace);
+        println!("Begin Dumping traces:\n-----");
+        println!("[");
+        for i in 0..traces.len() {
+            println!("    {}{}", traces[i], if i == traces.len() - 1 { "" } else { ","});
         }
+        println!("]");
+        println!("-----\nEnd Dumping traces");
     }
 }
 
@@ -28,7 +32,7 @@ struct Trace<'a> {
     cat: &'a str,
     pid: u32,
     tid: u32,
-    ts: u64,
+    ts: u128,
     ph: TraceEvent,
     name: &'a str,
     args: Vec<String>
@@ -46,7 +50,7 @@ impl<'a> Trace<'a> {
             cat,
             pid: 0,
             tid: 0,
-            ts: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(),
+            ts: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros(),
             ph: TraceEvent::B,
             name,
             args: vec![]
@@ -58,7 +62,7 @@ impl<'a> Trace<'a> {
             cat,
             pid: 0,
             tid: 0,
-            ts: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(),
+            ts: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros(),
             ph: TraceEvent::E,
             name,
             args: vec![]
@@ -86,7 +90,7 @@ fn main() {
 }
 
 fn sleep() {
-    thread::sleep(time::Duration::from_millis(1000));
+    thread::sleep(time::Duration::from_millis(10));
 }
 
 #[timed]
