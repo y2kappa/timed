@@ -1,0 +1,12 @@
+[
+    {
+        "cat": "MY_SUBSYSTEM", //catagory
+        "pid": 4260, //process ID
+        "tid": 4776, //thread ID
+        "ts": 2168627922668, //time-stamp of this event
+        "ph": "B", // Begin sample
+        "name": "doSomethingCostly", //name of this event
+        "args": { //arguments associated with this event.
+        }
+    }
+]

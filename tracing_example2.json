@@ -1,0 +1,10 @@
+[
+    {"cat":"Test","pid":21680,"tid":0,"ts":1601834003,"ph":"B","name":"foo","args":[]},
+    {"cat":"Test","pid":21680,"tid":0,"ts":1601834003,"ph":"B","name":"bar","args":[]},
+    {"cat":"Test","pid":21680,"tid":0,"ts":1601834004,"ph":"B","name":"baz","args":[]},
+    {"cat":"Test","pid":0,"tid":0,"ts":1601834005,"ph":"E","name":"baz","args":[]},
+    {"cat":"Test","pid":0,"tid":0,"ts":1601834006,"ph":"E","name":"bar","args":[]},
+    {"cat":"Test","pid":21680,"tid":0,"ts":1601834007,"ph":"B","name":"baz","args":[]},
+    {"cat":"Test","pid":0,"tid":0,"ts":1601834008,"ph":"E","name":"baz","args":[]},
+    {"cat":"Test","pid":0,"tid":0,"ts":1601834008,"ph":"E","name":"foo","args":[]}
+]

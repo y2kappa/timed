@@ -45,7 +45,6 @@
 //!
 //! ```
 
-
 use darling::FromMeta;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
