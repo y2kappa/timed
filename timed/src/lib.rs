@@ -55,6 +55,30 @@ use syn::{AttributeArgs, ItemFn};
 struct MacroArgs {
     #[darling(default)]
     printer: Option<String>,
+    #[darling(default)]
+    tracing: Option<bool>,
+}
+
+use proc_macro2::TokenStream as Code;
+
+fn tracing(options: &MacroArgs, function_name: &str) -> Option<(Code, Code)> {
+    if let Some(true) = options.tracing {
+        let begin = quote! {
+            let _tracing_begin = std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_micros();
+        };
+        let end = quote! {
+            let _tracing_end = std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_micros();
+        };
+        Some((begin, end))
+    } else {
+        None
+    }
 }
 
 fn printer(options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::TokenStream {
@@ -117,6 +141,7 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let name = &function.sig.ident;
     let printer = printer(&options, &name);
+    let (tracing_begin, tracing_end) = tracing(&options, &name);
 
     let result = quote! {
         #(#attrs)*

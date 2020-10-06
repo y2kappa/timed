@@ -1,3 +1,4 @@
+
 #[macro_use]
 extern crate log;
 use std::{thread, time};
@@ -8,6 +9,8 @@ mod tests;
 use serde_json::Result;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
+
+mod tracing_sub;
 
 lazy_static! {
     static ref TRACES: Mutex<Vec<String>> = Mutex::new(vec![]);
@@ -29,13 +32,9 @@ impl Drop for Tracing {
 
 #[derive(Debug, Serialize)]
 struct Trace<'a> {
-    cat: &'a str,
-    pid: u32,
-    tid: u32,
     ts: u128,
     ph: TraceEvent,
-    name: &'a str,
-    args: Vec<String>
+    name: &'a str
 }
 
 #[derive(Debug, Serialize)]
@@ -45,27 +44,15 @@ enum TraceEvent {
 }
 
 impl<'a> Trace<'a> {
-    fn begin(cat: &'a str, name: &'a str) -> Self {
-        Trace {
-            cat,
-            pid: 0,
-            tid: 0,
-            ts: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros(),
-            ph: TraceEvent::B,
-            name,
-            args: vec![]
-        }
+    fn begin(ts: u128, name: &'a str) -> Self {
+        Trace { ts, ph: TraceEvent::B, name }
     }
 
-    fn end(cat: &'a str, name: &'a str) -> Self {
+    fn end(ts: u128, name: &'a str) -> Self {
         Trace {
-            cat,
-            pid: 0,
-            tid: 0,
             ts: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros(),
             ph: TraceEvent::E,
-            name,
-            args: vec![]
+            name
         }
     }
 }
@@ -120,6 +107,7 @@ fn baz() {
     Trace::begin("Tracing", "baz");
 
     sleep();
+    tracing_sub::foo::bar::baz::foobar();
 
     Trace::end("Tracing", "baz");
 }
