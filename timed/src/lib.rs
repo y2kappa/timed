@@ -59,29 +59,56 @@ struct MacroArgs {
     tracing: Option<bool>,
 }
 
+// struct Tracing;
+// impl Drop for Tracing {
+//     fn drop(&mut self) {
+//         let traces = TRACES.lock().unwrap();
+//         println!("Begin Dumping traces:\n-----");
+//         println!("[");
+//         for i in 0..traces.len() {
+//             println!("    {}{}", traces[i], if i == traces.len() - 1 { "" } else { ","});
+//         }
+//         println!("]");
+//         println!("-----\nEnd Dumping traces");
+//     }
+// }
+
+
 use proc_macro2::TokenStream as Code;
 
-fn tracing(options: &MacroArgs, function_name: &str) -> Option<(Code, Code)> {
+fn codegen_tracing(printer: &proc_macro2::TokenStream, options: &MacroArgs, function_name: &str) -> (Option<Code>, Option<Code>) {
     if let Some(true) = options.tracing {
         let begin = quote! {
-            let _tracing_begin = std::time::SystemTime::now()
-                .duration_since(std::time::SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_micros();
+            {
+                let ts = std::time::SystemTime::now()
+                    .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_micros();
+                #printer("{{\"ts\": {}, \"ph\": \"B\", \"name\": \"{}\" }}", ts, #function_name);
+            }
         };
         let end = quote! {
-            let _tracing_end = std::time::SystemTime::now()
-                .duration_since(std::time::SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_micros();
+            {
+                let ts = std::time::SystemTime::now()
+                    .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_micros();
+                #printer("{{\"ts\": {}, \"ph\": \"E\", \"name\": \"{}\" }}", ts, #function_name);
+            }
         };
-        Some((begin, end))
+        (Some(begin), Some(end))
     } else {
-        None
+        (None, None)
     }
 }
 
-fn printer(options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::TokenStream {
+fn codegen_duration(printer: &proc_macro2::TokenStream, options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::TokenStream {
+    quote! {
+        #printer("function={} duration={:?}", stringify!(#function_name), start.elapsed());
+    }
+}
+
+fn codegen_printer(options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::TokenStream {
     let (printer, needs_bang) = match &options.printer {
         Some(printer) => {
             if printer.ends_with('!') {
@@ -100,9 +127,8 @@ fn printer(options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::Toke
     };
 
     let printer = syn::Ident::new(printer, Span::call_site());
-
     quote! {
-        #printer#bang("function={} duration={:?}", stringify!(#function_name), start.elapsed());
+        #printer#bang
     }
 }
 
@@ -140,15 +166,18 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
     } = &function;
 
     let name = &function.sig.ident;
-    let printer = printer(&options, &name);
-    let (tracing_begin, tracing_end) = tracing(&options, &name);
+    let printer = codegen_printer(&options, &name);
+    let print_duration = codegen_duration(&printer, &options, &name);
+    let (tracing_begin, tracing_end) = codegen_tracing(&printer, &options, &name.to_string());
 
     let result = quote! {
         #(#attrs)*
         #vis #sig {
+           #tracing_begin
            let start = std::time::Instant::now();
            let res = { #body };
-           #printer
+           #print_duration
+           #tracing_end
            res
         }
     };

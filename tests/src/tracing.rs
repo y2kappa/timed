@@ -30,45 +30,12 @@ impl Drop for Tracing {
     }
 }
 
-#[derive(Debug, Serialize)]
-struct Trace<'a> {
-    ts: u128,
-    ph: TraceEvent,
-    name: &'a str
-}
-
-#[derive(Debug, Serialize)]
-enum TraceEvent {
-    B,
-    E
-}
-
-impl<'a> Trace<'a> {
-    fn begin(ts: u128, name: &'a str) -> Self {
-        Trace { ts, ph: TraceEvent::B, name }
-    }
-
-    fn end(ts: u128, name: &'a str) -> Self {
-        Trace {
-            ts: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros(),
-            ph: TraceEvent::E,
-            name
-        }
-    }
-}
-
-
 pub fn collect_trace(trace: String) {
     TRACES.lock().unwrap().push(trace)
 }
 
-impl Drop for Trace<'_> {
-    fn drop(&mut self) {
-        crate::collect_trace(serde_json::to_string(&self).unwrap());
-    }
-}
 
-#[timed]
+#[timed(tracing=true)]
 fn main() {
     let _trace = Tracing;
     println!("Running main");
@@ -82,32 +49,20 @@ fn sleep() {
 
 #[timed]
 fn foo() {
-    Trace::begin("Tracing", "foo");
-
     bar();
     sleep();
     baz();
-
-    Trace::end("Tracing", "foo");
 }
 
 #[timed]
 fn bar() {
-    Trace::begin("Tracing", "bar");
-
     sleep();
     baz();
     sleep();
-
-    Trace::end("Tracing", "bar");
 }
 
 #[timed]
 fn baz() {
-    Trace::begin("Tracing", "baz");
-
     sleep();
     tracing_sub::foo::bar::baz::foobar();
-
-    Trace::end("Tracing", "baz");
 }
