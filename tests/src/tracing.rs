@@ -37,7 +37,9 @@ pub fn collect_trace(trace: String) {
 
 #[timed(tracing=true)]
 fn main() {
-    let _trace = Tracing;
+
+    let _trace = timed_tracing::Trace::new("Test".to_string());
+
     println!("Running main");
     sleep();
     foo();
@@ -47,21 +49,21 @@ fn sleep() {
     thread::sleep(time::Duration::from_millis(10));
 }
 
-#[timed]
+#[timed(tracing=true)]
 fn foo() {
     bar();
     sleep();
     baz();
 }
 
-#[timed]
+#[timed(tracing=true)]
 fn bar() {
     sleep();
     baz();
     sleep();
 }
 
-#[timed]
+#[timed(tracing=true)]
 fn baz() {
     sleep();
     tracing_sub::foo::bar::baz::foobar();

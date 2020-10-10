@@ -84,7 +84,9 @@ fn codegen_tracing(printer: &proc_macro2::TokenStream, options: &MacroArgs, func
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                #printer("{{\"ts\": {}, \"ph\": \"B\", \"name\": \"{}\" }}", ts, #function_name);
+                let trace = format!("{{ \"pid\": 0, \"ts\": {},  \"ph\": \"B\", \"name\": \"{}\" }}", ts, #function_name);
+                timed_tracing::collect(timed_tracing::Action::Collect(trace.clone()));
+                // #printer("{}", trace);
             }
         };
         let end = quote! {
@@ -93,7 +95,9 @@ fn codegen_tracing(printer: &proc_macro2::TokenStream, options: &MacroArgs, func
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                #printer("{{\"ts\": {}, \"ph\": \"E\", \"name\": \"{}\" }}", ts, #function_name);
+                let trace = format!("{{ \"pid\": 0, \"ts\": {}, \"ph\": \"E\", \"name\": \"{}\" }}", ts, #function_name);
+                timed_tracing::collect(timed_tracing::Action::Collect(trace.clone()));
+                // #printer("{}", trace);
             }
         };
         (Some(begin), Some(end))
