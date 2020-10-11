@@ -13,6 +13,7 @@
 - [ ] profile this, with and without to see perf impact, async and multithreading
 - [ ] add save to file
 - [ ] show stats to give you some sort of state of what should you really optimize for in your function, to keep accumulating the seconds for that given tag / function
+- [ ] blog post about tracing
 
 ## Done
 - [x] Add and test async
