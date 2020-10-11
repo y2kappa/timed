@@ -92,5 +92,6 @@ async fn with_async() {
 
 #[tokio::test]
 async fn test_async_quotes() {
-    crate::get_random_quote().await
+    use crate::tests_utils::get_random_quote;
+    get_random_quote().await
 }
