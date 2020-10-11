@@ -76,7 +76,7 @@ struct MacroArgs {
 
 use proc_macro2::TokenStream as Code;
 
-fn codegen_tracing(printer: &proc_macro2::TokenStream, options: &MacroArgs, function_name: &str) -> (Option<Code>, Option<Code>) {
+fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, Option<Code>) {
     if let Some(true) = options.tracing {
         let begin = quote! {
             {
@@ -86,7 +86,6 @@ fn codegen_tracing(printer: &proc_macro2::TokenStream, options: &MacroArgs, func
                     .as_micros();
                 let trace = format!("{{ \"pid\": 0, \"ts\": {},  \"ph\": \"B\", \"name\": \"{}\" }}", ts, #function_name);
                 timed_tracing::collect(timed_tracing::Action::Collect(trace.clone()));
-                // #printer("{}", trace);
             }
         };
         let end = quote! {
@@ -97,7 +96,6 @@ fn codegen_tracing(printer: &proc_macro2::TokenStream, options: &MacroArgs, func
                     .as_micros();
                 let trace = format!("{{ \"pid\": 0, \"ts\": {}, \"ph\": \"E\", \"name\": \"{}\" }}", ts, #function_name);
                 timed_tracing::collect(timed_tracing::Action::Collect(trace.clone()));
-                // #printer("{}", trace);
             }
         };
         (Some(begin), Some(end))
@@ -106,13 +104,13 @@ fn codegen_tracing(printer: &proc_macro2::TokenStream, options: &MacroArgs, func
     }
 }
 
-fn codegen_duration(printer: &proc_macro2::TokenStream, options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::TokenStream {
+fn codegen_duration(printer: &proc_macro2::TokenStream, function_name: &syn::Ident) -> proc_macro2::TokenStream {
     quote! {
         #printer("function={} duration={:?}", stringify!(#function_name), start.elapsed());
     }
 }
 
-fn codegen_printer(options: &MacroArgs, function_name: &syn::Ident) -> proc_macro2::TokenStream {
+fn codegen_printer(options: &MacroArgs) -> proc_macro2::TokenStream {
     let (printer, needs_bang) = match &options.printer {
         Some(printer) => {
             if printer.ends_with('!') {
@@ -170,9 +168,9 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
     } = &function;
 
     let name = &function.sig.ident;
-    let printer = codegen_printer(&options, &name);
-    let print_duration = codegen_duration(&printer, &options, &name);
-    let (tracing_begin, tracing_end) = codegen_tracing(&printer, &options, &name.to_string());
+    let printer = codegen_printer(&options);
+    let print_duration = codegen_duration(&printer, &name);
+    let (tracing_begin, tracing_end) = codegen_tracing(&options, &name.to_string());
 
     let result = quote! {
         #(#attrs)*

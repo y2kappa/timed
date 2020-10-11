@@ -2,9 +2,11 @@ use std::{thread, time};
 use timed::timed;
 
 use std::sync::Once;
+#[allow(dead_code)]
 static INIT: Once = Once::new();
 
 /// Setup function that is only run once, even if called multiple times.
+#[allow(dead_code)]
 fn init_logger() {
     INIT.call_once(|| {
         pretty_env_logger::init();

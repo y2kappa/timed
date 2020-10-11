@@ -46,7 +46,7 @@ pub struct Trace(String);
 
 impl Trace {
     pub fn new(id: String) -> Trace {
-        let trace = Trace("Hello".to_string());
+        let trace = Trace(id);
         collect(Action::Init(trace.0.clone()));
         trace
     }
