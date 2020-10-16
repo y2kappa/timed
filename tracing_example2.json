@@ -1,0 +1,10 @@
+[
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648407310,"ph":"B","name":"foo","args":[]},
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648407509,"ph":"B","name":"bar","args":[]},
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648420175,"ph":"B","name":"baz","args":[]},
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648431336,"ph":"E","name":"baz","args":[]},
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648442434,"ph":"E","name":"bar","args":[]},
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648453896,"ph":"B","name":"baz","args":[]},
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648464239,"ph":"E","name":"baz","args":[]},
+    {"cat":"Tracing","pid":0,"tid":0,"ts":1601835648464302,"ph":"E","name":"foo","args":[]}
+]

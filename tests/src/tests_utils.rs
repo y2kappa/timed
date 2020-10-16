@@ -1,20 +1,10 @@
-#[macro_use]
-extern crate log;
-use serde::Deserialize;
 use timed::timed;
-mod tests;
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 struct Quote {
     text: Option<String>,
     author: Option<String>,
-}
-
-#[tokio::main]
-#[timed]
-async fn main() {
-    println!("Running main");
-    get_random_quote().await
 }
 
 #[timed]

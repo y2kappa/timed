@@ -2,5 +2,6 @@
 
 members = [
     "timed",
+    "timed_tracing",
     "tests"
 ]

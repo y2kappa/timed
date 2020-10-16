@@ -74,3 +74,10 @@ async fn main() {
 ## Contribution
 Contributions are welcome. Please submit PR.
 See [TODO](TODO.md)
+
+### Run / Build
+
+```shell script
+$ cargo run --example async
+$ cargo test
+```
