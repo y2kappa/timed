@@ -15,5 +15,5 @@ include = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-timed_proc_macros = { path = "../timed_proc_macros" }
+timed_proc_macros = "0.1.0"
 lazy_static = "1.4.0"
