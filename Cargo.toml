@@ -2,6 +2,6 @@
 
 members = [
     "timed",
-    "timed_tracing",
+    "timed_proc_macros",
     "tests"
 ]
