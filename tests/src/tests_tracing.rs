@@ -42,8 +42,7 @@ pub mod foo {
 #[timed::timed(tracing=true)]
 fn test_tracing() {
 
-    // TODO: crate timed::tracing::init!("Test");
-    let _trace = timed::Trace::new("Test".to_string());
+    timed::init_tracing!("Test");
 
     println!("Running main");
     sleep();
