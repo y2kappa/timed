@@ -53,11 +53,12 @@ use std::sync::Mutex;
 use std::collections::HashMap;
 
 lazy_static! {
-    static ref TRACES: Mutex<HashMap<String, Vec<String>>> = Mutex::new(HashMap::new());
+    static ref TRACES: Mutex<HashMap<String, Vec<Hop>>> = Mutex::new(HashMap::new());
 }
 
 pub enum TracingStats {
     None,
+    Percentage
 }
 
 pub struct Trace {
@@ -66,33 +67,48 @@ pub struct Trace {
     stats: TracingStats,
 }
 
+#[derive(Debug, Clone)]
+pub enum Phase { B, E }
+
+#[derive(Clone)]
+pub struct Hop {
+    pub ts: u128,
+    pub ph: Phase,
+    pub name: String
+}
+
 impl Trace {
 
     pub fn register(id: &str) {
         TRACES.lock().unwrap().insert(id.to_string(), vec![]);
     }
 
-    pub fn collect(trace: String) {
+    pub fn collect(hop: Hop) {
         for trace_group in TRACES.lock().unwrap().iter_mut() {
-            trace_group.1.push(trace.clone());
+            trace_group.1.push(hop.clone());
         }
     }
 
-    pub fn dump(id: &str, processor: fn(&str)) {
+    pub fn dump(id: &str, processor: fn(&str), stats: &TracingStats) {
         let start = std::time::Instant::now();
         let mut traces = TRACES.lock().unwrap();
         let entry = traces.entry(id.to_string()).or_insert(vec![]);
-        for (i, trace) in entry.iter().enumerate() {
-            if i == 0 {
-                processor("[");
-            }
+
+        processor("[");
+        for (i, hop) in entry.iter().enumerate() {
             let is_last = i == entry.len() - 1;
+            let trace = format!("{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{:?}\", \"name\": \"{}\" }}", hop.ts, hop.ph, hop.name);
             processor(&format!("    {}{}", trace, if !is_last { "," } else { "" }));
-            if is_last {
-                processor("]");
+        }
+        processor("]");
+        processor(&format!("Dumping traces took {:?}", start.elapsed()));
+
+        match stats {
+            TracingStats::None => {},
+            TracingStats::Percentage => {
+
             }
         }
-        processor(&format!("Dumping traces took {:?}", start.elapsed()));
     }
 
     pub fn new(id: &str, processor: Option<fn(&str)>, stats: Option<TracingStats>) -> Trace {
@@ -111,7 +127,7 @@ impl Trace {
 
 impl Drop for Trace {
     fn drop(&mut self) {
-        Trace::dump(&self.id, self.processor);
+        Trace::dump(&self.id, self.processor, &self.stats);
     }
 }
 
