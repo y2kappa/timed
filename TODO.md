@@ -16,7 +16,10 @@
 - [ ] blog post about tracing
 - [ ] add name override to function, sometimes "new" is not very useful
 - [ ] remove all unwraps, hardcode the function name, don't put it in format! both in tracing and in duration
- 
+- [ ] add example repo, add gifs
+- [ ] ask for help to write the stats
+- [ ] ask for help to write a few more idiomatic examples where this would be useful
+
 ## Done
 - [x] tracing print with "printer"
 - [x] Keep accumulating in a global state
