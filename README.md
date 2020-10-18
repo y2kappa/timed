@@ -1,4 +1,4 @@
-# Rust `timed` macro to time function execution
+# Rust `timed` macro to quickly profile your programs
 
 ✅ Works with `async`
 

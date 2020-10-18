@@ -22,7 +22,8 @@
 - [ ] add thread and pid and enrich with what else chrome::tracing allows you to
 - [ ] ask for help for taking a closure as argument to remove the warning and possibly making it cleaner
 - [ ] init/main function is not captured during tracing, perhaps try a different type of init
-- [ ] allow disable duration to keep tracing only
+- [ ] allow disable duration to keep tracing only. 
+- [ ] Add the module path to the name of a function like "foo::bar::baz()" in tracing
 
 ## Done
 - [x] tracing print with "printer"
