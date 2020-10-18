@@ -55,7 +55,7 @@ fn mul_info(x: i32, y: i32) -> i32 {
     x * y
 }
 
-#[timed(printer = "error!")]
+#[timed(printer = "warn!")]
 fn mul_error(x: i32, y: i32) -> i32 {
     x * y
 }

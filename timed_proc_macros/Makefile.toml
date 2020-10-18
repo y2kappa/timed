@@ -1,0 +1,22 @@
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+#[tasks.clean]
+#command = "cargo"
+#args = ["clean"]
+#
+#[tasks.build]
+#command = "cargo"
+#args = ["build"]
+#dependencies = ["clean"]
+#
+#[tasks.tests.expand]
+#command = "cargo"
+#args = ["run", "--package", "tests", "--bin", "tests_expand"]
+#dependencies = ["clean"]
+
+[tasks.testing]
+dependencies = [
+    "build",
+]
