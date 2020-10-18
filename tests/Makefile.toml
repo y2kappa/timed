@@ -1,0 +1,23 @@
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+[tasks.run_macros]
+command = "cargo"
+args = ["run", "--bin", "tests_macro"]
+
+[tasks.run_expand]
+command = "cargo"
+args = ["run", "--bin", "tests_expand"]
+
+[tasks.tests]
+command = "cargo"
+args = ["test"]
+
+[tasks.testing]
+dependencies = [
+    "build",
+    "run_macros",
+    "run_expand",
+    "tests",
+]

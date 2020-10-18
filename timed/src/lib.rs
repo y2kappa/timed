@@ -49,8 +49,8 @@ pub use timed_proc_macros::timed;
 
 #[macro_use]
 extern crate lazy_static;
-use std::sync::Mutex;
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 lazy_static! {
     static ref TRACES: Mutex<HashMap<String, Vec<Hop>>> = Mutex::new(HashMap::new());
@@ -58,7 +58,7 @@ lazy_static! {
 
 pub enum TracingStats {
     None,
-    Percentage
+    Percentage,
 }
 
 pub struct Trace {
@@ -68,17 +68,19 @@ pub struct Trace {
 }
 
 #[derive(Debug, Clone)]
-pub enum Phase { B, E }
+pub enum Phase {
+    B,
+    E,
+}
 
 #[derive(Clone)]
 pub struct Hop {
     pub ts: u128,
     pub ph: Phase,
-    pub name: String
+    pub name: String,
 }
 
 impl Trace {
-
     pub fn register(id: &str) {
         TRACES.lock().unwrap().insert(id.to_string(), vec![]);
     }
@@ -97,17 +99,18 @@ impl Trace {
         processor("[");
         for (i, hop) in entry.iter().enumerate() {
             let is_last = i == entry.len() - 1;
-            let trace = format!("{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{:?}\", \"name\": \"{}\" }}", hop.ts, hop.ph, hop.name);
+            let trace = format!(
+                "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{:?}\", \"name\": \"{}\" }}",
+                hop.ts, hop.ph, hop.name
+            );
             processor(&format!("    {}{}", trace, if !is_last { "," } else { "" }));
         }
         processor("]");
         processor(&format!("Dumping traces took {:?}", start.elapsed()));
 
         match stats {
-            TracingStats::None => {},
-            TracingStats::Percentage => {
-
-            }
+            TracingStats::None => {}
+            TracingStats::Percentage => {}
         }
     }
 
@@ -122,7 +125,6 @@ impl Trace {
         Self::register(&trace.id);
         trace
     }
-
 }
 
 impl Drop for Trace {
@@ -145,12 +147,4 @@ macro_rules! init_tracing {
     ($name:expr, $closure:tt, $stats:expr) => {
         let __trace = timed::Trace::new($name, Some($closure), Some($stats));
     };
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
 }

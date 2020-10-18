@@ -18,6 +18,6 @@ fn bar() {
 
 #[timed::timed(tracing = true)]
 fn main() {
-    timed::init_tracing!("Test", (|x| { println!("{}", x)}));
+    timed::init_tracing!("Test", (|x| { println!("{}", x) }));
     foo();
 }
