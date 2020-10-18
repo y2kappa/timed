@@ -7,5 +7,3 @@ async fn main() {
     println!("Running main");
     get_random_quote().await
 }
-
-

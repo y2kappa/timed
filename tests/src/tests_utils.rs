@@ -1,5 +1,5 @@
-use timed::timed;
 use serde::Deserialize;
+use timed::timed;
 
 #[derive(Deserialize, Debug)]
 struct Quote {

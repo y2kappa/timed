@@ -6,16 +6,24 @@
 - [ ] idea for a new crate: can have a global state (for testing maybe) that tracks / tests / counts how many times something was called and assert during tests
 
 ## Chrome tracing
-- [ ] Keep accumulating in a global state
-- [ ] use timed::dump/flush on stdout/file when useful
 - [ ] add documentation show how to use chrome://tracing
 - [ ] add CI
 - [ ] profile this, with and without to see perf impact, async and multithreading
 - [ ] add save to file
+- [ ] add tags to functions, to group them together
+- [ ] also do this for blocks (for example to want to know how long you're spending in a for loop, or in allocation, or etc)
 - [ ] show stats to give you some sort of state of what should you really optimize for in your function, to keep accumulating the seconds for that given tag / function
 - [ ] blog post about tracing
+- [ ] add name override to function, sometimes "new" is not very useful
+- [ ] remove all unwraps, hardcode the function name, don't put it in format! both in tracing and in duration
+- [ ] add example repo, add gifs
+- [ ] ask for help to write the stats
+- [ ] ask for help to write a few more idiomatic examples where this would be useful
 
 ## Done
+- [x] tracing print with "printer"
+- [x] Keep accumulating in a global state
+- [no longer] use timed::dump/flush on stdout/file when useful
 - [x] Add and test async
 - [x] Use syn, remove manual parser
 - [x] Attribute to macro such as log level if needed:

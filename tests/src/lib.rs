@@ -1,6 +1,8 @@
+mod tests_macro;
+
 #[macro_use]
 extern crate log;
 
-pub mod tests_utils;
 mod tests_duration;
 mod tests_tracing;
+pub mod tests_utils;

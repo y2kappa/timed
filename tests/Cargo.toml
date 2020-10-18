@@ -15,3 +15,13 @@ log = "0.4"
 pretty_env_logger = "0.4"
 serde_json = "1.0.58"
 lazy_static = "1.4.0"
+
+
+[[bin]]
+name = "tests_macro"
+path = "src/tests_macro.rs"
+
+
+[[bin]]
+name = "tests_expand"
+path = "src/tests_expand.rs"

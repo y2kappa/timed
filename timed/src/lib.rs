@@ -45,66 +45,106 @@
 //!
 //! ```
 
-pub use timed_proc_macros::timed as timed;
+pub use timed_proc_macros::timed;
 
 #[macro_use]
 extern crate lazy_static;
-
 use std::sync::Mutex;
-
-pub enum Action {
-    Init(String),
-    Dump(String),
-    Collect(String)
-}
-
 use std::collections::HashMap;
 
 lazy_static! {
-    static ref TRACES: Mutex<HashMap<String, Vec<String>>> = Mutex::new(HashMap::new());
+    static ref TRACES: Mutex<HashMap<String, Vec<Hop>>> = Mutex::new(HashMap::new());
 }
 
-pub fn collect(action: Action) {
-    match action {
-        Action::Init(id) => {
-            TRACES.lock().unwrap().insert(id.clone(), vec![]);
-        },
-        Action::Dump(id) => {
-            let mut traces = TRACES.lock().unwrap();
-            let entry = traces.entry(id.clone()).or_insert(vec![]);
-            for (i, trace) in entry.iter().enumerate() {
-                if i == 0 {
-                    println!("[");
-                }
-                let is_last = i == entry.len() - 1;
-                println!("    {}{}", trace, if !is_last { "," } else {""});
-                if is_last {
-                    println!("]");
-                }
-            }
-        },
-        Action::Collect(trace) => {
-            for trace_group in TRACES.lock().unwrap().iter_mut() {
-                trace_group.1.push(trace.clone());
+pub enum TracingStats {
+    None,
+    Percentage
+}
+
+pub struct Trace {
+    id: String,
+    processor: fn(&str),
+    stats: TracingStats,
+}
+
+#[derive(Debug, Clone)]
+pub enum Phase { B, E }
+
+#[derive(Clone)]
+pub struct Hop {
+    pub ts: u128,
+    pub ph: Phase,
+    pub name: String
+}
+
+impl Trace {
+
+    pub fn register(id: &str) {
+        TRACES.lock().unwrap().insert(id.to_string(), vec![]);
+    }
+
+    pub fn collect(hop: Hop) {
+        for trace_group in TRACES.lock().unwrap().iter_mut() {
+            trace_group.1.push(hop.clone());
+        }
+    }
+
+    pub fn dump(id: &str, processor: fn(&str), stats: &TracingStats) {
+        let start = std::time::Instant::now();
+        let mut traces = TRACES.lock().unwrap();
+        let entry = traces.entry(id.to_string()).or_insert(vec![]);
+
+        processor("[");
+        for (i, hop) in entry.iter().enumerate() {
+            let is_last = i == entry.len() - 1;
+            let trace = format!("{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{:?}\", \"name\": \"{}\" }}", hop.ts, hop.ph, hop.name);
+            processor(&format!("    {}{}", trace, if !is_last { "," } else { "" }));
+        }
+        processor("]");
+        processor(&format!("Dumping traces took {:?}", start.elapsed()));
+
+        match stats {
+            TracingStats::None => {},
+            TracingStats::Percentage => {
+
             }
         }
     }
-}
 
-pub struct Trace(String);
-
-impl Trace {
-    pub fn new(id: String) -> Trace {
-        let trace = Trace(id);
-        collect(Action::Init(trace.0.clone()));
+    pub fn new(id: &str, processor: Option<fn(&str)>, stats: Option<TracingStats>) -> Trace {
+        let trace = Trace {
+            id: id.into(),
+            processor: processor.unwrap_or(|x: &str| {
+                println!("{}", x);
+            }),
+            stats: stats.unwrap_or(TracingStats::None),
+        };
+        Self::register(&trace.id);
         trace
     }
+
 }
 
 impl Drop for Trace {
     fn drop(&mut self) {
-        collect(Action::Dump(self.0.clone()));
+        Trace::dump(&self.id, self.processor, &self.stats);
     }
+}
+
+#[macro_export]
+macro_rules! init_tracing {
+    () => {
+        let __trace = timed::Trace::new("Tracing", None, None);
+    };
+    ($name:expr) => {
+        let __trace = timed::Trace::new($name, None, None);
+    };
+    ($name:expr, $closure:tt) => {
+        let __trace = timed::Trace::new($name, Some($closure), None);
+    };
+    ($name:expr, $closure:tt, $stats:expr) => {
+        let __trace = timed::Trace::new($name, Some($closure), Some($stats));
+    };
 }
 
 #[cfg(test)]
