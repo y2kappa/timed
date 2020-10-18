@@ -1,4 +1,3 @@
-
 use darling::FromMeta;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
@@ -27,7 +26,6 @@ struct MacroArgs {
 //     }
 // }
 
-
 use proc_macro2::TokenStream as Code;
 
 fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, Option<Code>) {
@@ -39,7 +37,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .unwrap()
                     .as_micros();
                 let trace = format!("{{ \"pid\": 0, \"ts\": {},  \"ph\": \"B\", \"name\": \"{}\" }}", ts, #function_name);
-                timed::collect(timed::Action::Collect(trace.clone()));
+                timed::Trace::collect(trace);
             }
         };
         let end = quote! {
@@ -49,7 +47,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .unwrap()
                     .as_micros();
                 let trace = format!("{{ \"pid\": 0, \"ts\": {}, \"ph\": \"E\", \"name\": \"{}\" }}", ts, #function_name);
-                timed::collect(timed::Action::Collect(trace.clone()));
+                timed::Trace::collect(trace);
             }
         };
         (Some(begin), Some(end))
@@ -58,7 +56,10 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
     }
 }
 
-fn codegen_duration(printer: &proc_macro2::TokenStream, function_name: &syn::Ident) -> proc_macro2::TokenStream {
+fn codegen_duration(
+    printer: &proc_macro2::TokenStream,
+    function_name: &syn::Ident,
+) -> proc_macro2::TokenStream {
     quote! {
         #printer("function={} duration={:?}", stringify!(#function_name), start.elapsed());
     }

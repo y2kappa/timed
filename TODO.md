@@ -14,7 +14,10 @@
 - [ ] add save to file
 - [ ] show stats to give you some sort of state of what should you really optimize for in your function, to keep accumulating the seconds for that given tag / function
 - [ ] blog post about tracing
-
+- [ ] add name override to function, sometimes "new" is not very useful
+- [ ] tracing print with "printer"
+- [ ] remove all unwraps, hardcode the function name, don't put it in format! both in tracing and in duration
+ 
 ## Done
 - [x] Add and test async
 - [x] Use syn, remove manual parser

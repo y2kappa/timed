@@ -6,21 +6,21 @@ fn sleep() {
     thread::sleep(time::Duration::from_millis(10));
 }
 
-#[timed::timed(tracing=true)]
+#[timed::timed(tracing = true)]
 fn foo() {
     bar();
     sleep();
     baz();
 }
 
-#[timed::timed(tracing=true)]
+#[timed::timed(tracing = true)]
 fn bar() {
     sleep();
     baz();
     sleep();
 }
 
-#[timed::timed(tracing=true)]
+#[timed::timed(tracing = true)]
 fn baz() {
     sleep();
     foo::bar::baz::foobar();
@@ -30,7 +30,7 @@ pub mod foo {
     pub mod bar {
         pub mod baz {
             use timed::timed;
-            #[timed(tracing=true)]
+            #[timed(tracing = true)]
             pub fn foobar() {
                 println!("Foobar");
             }
@@ -39,13 +39,11 @@ pub mod foo {
 }
 
 #[test]
-#[timed::timed(tracing=true)]
+#[timed::timed(tracing = true)]
 fn test_tracing() {
-
     timed::init_tracing!("Test");
 
     println!("Running main");
     sleep();
     foo();
 }
-
