@@ -32,6 +32,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
     if let Some(true) = options.tracing {
         let begin = quote! {
             {
+                let module_path = std::module_path!();
                 let ts = std::time::SystemTime::now()
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
@@ -41,6 +42,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
         };
         let end = quote! {
             {
+                let module_path = std::module_path!();
                 let ts = std::time::SystemTime::now()
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
@@ -56,10 +58,10 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
 
 fn codegen_duration(
     printer: &proc_macro2::TokenStream,
-    function_name: &syn::Ident,
+    function_name: &str,
 ) -> proc_macro2::TokenStream {
     quote! {
-        #printer("function={} duration={:?}", stringify!(#function_name), elapsed);
+        #printer("function={} duration={:?}", #function_name, elapsed);
     }
 }
 
@@ -119,11 +121,11 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
         block: body,
         ..
     } = &function;
-
-    let name = &function.sig.ident;
+    let name = format!("{}::{}", std::module_path!(), &function.sig.ident);
+    let name_str = name.as_str();
     let printer = codegen_printer(&options);
-    let print_duration = codegen_duration(&printer, &name);
-    let (tracing_begin, tracing_end) = codegen_tracing(&options, &name.to_string());
+    let print_duration = codegen_duration(&printer, name_str);
+    let (tracing_begin, tracing_end) = codegen_tracing(&options, name_str);
 
     let result = quote! {
         #(#attrs)*

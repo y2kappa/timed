@@ -136,16 +136,17 @@ impl Trace {
         match stats {
             TracingStats::None => {}
             TracingStats::Statistics => {
-                processor(&format!(":::Statistics:::\nall functions total time: {:?}", Duration::from_nanos(total_time_nanos as u64)));
+                processor("========================\n      Statistics\n========================");
                 stats_map.iter().for_each(|(k, v)| {
                     let current_total: u128 = v.iter().map(|d| d.as_nanos()).sum();
-                    processor(&format!("function: {:<30}calls: {:<10}total time: {:<11} ({:.5}%)",
+                    processor(&format!("- {}\n\t> calls: {:>6}\n\t> total time: {:<11} ({:.5}%)",
                                        k,
                                        v.len(),
                                        format!("{:?}", Duration::from_nanos(current_total as u64)),
                                        100.0 * current_total as f64 / total_time_nanos as f64
                     ));
                 });
+                processor(&format!("========================\nall functions total time: {:?}", Duration::from_nanos(total_time_nanos as u64)));
             }
         }
 
