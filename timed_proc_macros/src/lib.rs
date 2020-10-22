@@ -36,7 +36,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::B, name: #function_name.to_string(), ts});
+                timed::Trace::collect(timed::Hop { ph: timed::Phase::Start, name: #function_name.to_string(), ts});
             }
         };
         let end = quote! {
@@ -45,7 +45,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::E, name: #function_name.to_string(), ts});
+                timed::Trace::collect(timed::Hop { ph: timed::Phase::Finish(elapsed), name: #function_name.to_string(), ts});
             }
         };
         (Some(begin), Some(end))
@@ -59,7 +59,7 @@ fn codegen_duration(
     function_name: &syn::Ident,
 ) -> proc_macro2::TokenStream {
     quote! {
-        #printer("function={} duration={:?}", stringify!(#function_name), start.elapsed());
+        #printer("function={} duration={:?}", stringify!(#function_name), elapsed);
     }
 }
 
@@ -131,6 +131,7 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
            #tracing_begin
            let start = std::time::Instant::now();
            let res = { #body };
+           let elapsed = start.elapsed();
            #print_duration
            #tracing_end
            res

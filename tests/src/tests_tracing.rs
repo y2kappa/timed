@@ -1,5 +1,6 @@
 use std::{thread, time};
 use timed;
+use timed::TracingStats;
 
 #[allow(dead_code)]
 fn sleep() {
@@ -41,7 +42,7 @@ pub mod foo {
 #[test]
 #[timed::timed(tracing = true)]
 fn test_tracing() {
-    timed::init_tracing!("Test");
+    timed::init_tracing!("Test", TracingStats::Statistics);
 
     println!("Running main");
     sleep();

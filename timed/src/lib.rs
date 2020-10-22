@@ -49,16 +49,20 @@ pub use timed_proc_macros::timed;
 
 #[macro_use]
 extern crate lazy_static;
+
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::Duration;
+use crate::Phase::Finish;
 
 lazy_static! {
     static ref TRACES: Mutex<HashMap<String, Vec<Hop>>> = Mutex::new(HashMap::new());
 }
 
+#[derive(Eq, PartialEq)]
 pub enum TracingStats {
     None,
-    Percentage,
+    Statistics,
 }
 
 pub struct Trace {
@@ -67,10 +71,19 @@ pub struct Trace {
     stats: TracingStats,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Phase {
-    B,
-    E,
+    Start,
+    Finish(Duration),
+}
+
+impl Phase {
+    fn to_string(&self) -> String {
+        match self {
+            Phase::Start => "Start".to_string(),
+            Finish(_) => "Finish".to_string()
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -95,23 +108,48 @@ impl Trace {
         let start = std::time::Instant::now();
         let mut traces = TRACES.lock().unwrap();
         let entry = traces.entry(id.to_string()).or_insert(vec![]);
+        let mut stats_map = HashMap::new();
+        let mut total_time_nanos: u128 = 0;
 
         processor("[");
         for (i, hop) in entry.iter().enumerate() {
+            if stats == &TracingStats::Statistics {
+                if let Finish(d) = hop.ph {
+                    if !stats_map.contains_key(hop.name.as_str()) {
+                        stats_map.insert(hop.name.clone(), vec![]);
+                    }
+
+                    stats_map.get_mut(hop.name.as_str()).unwrap().push(d);
+                    total_time_nanos += d.as_nanos();
+                }
+            }
+
             let is_last = i == entry.len() - 1;
             let trace = format!(
-                "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{:?}\", \"name\": \"{}\" }}",
-                hop.ts, hop.ph, hop.name
+                "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
+                hop.ts, hop.ph.to_string(), hop.name
             );
             processor(&format!("    {}{}", trace, if !is_last { "," } else { "" }));
         }
         processor("]");
-        processor(&format!("Dumping traces took {:?}", start.elapsed()));
 
         match stats {
             TracingStats::None => {}
-            TracingStats::Percentage => {}
+            TracingStats::Statistics => {
+                processor(&format!(":::Statistics:::\nall functions total time: {:?}", Duration::from_nanos(total_time_nanos as u64)));
+                stats_map.iter().for_each(|(k, v)| {
+                    let current_total: u128 = v.iter().map(|d| d.as_nanos()).sum();
+                    processor(&format!("function: {:<30}calls: {:<10}total time: {:<11} ({:.5}%)",
+                                       k,
+                                       v.len(),
+                                       format!("{:?}", Duration::from_nanos(current_total as u64)),
+                                       100.0 * current_total as f64 / total_time_nanos as f64
+                    ));
+                });
+            }
         }
+
+        processor(&format!("Dumping traces took {:?}", start.elapsed()));
     }
 
     pub fn new(id: &str, processor: Option<fn(&str)>, stats: Option<TracingStats>) -> Trace {
@@ -146,5 +184,8 @@ macro_rules! init_tracing {
     };
     ($name:expr, $closure:tt, $stats:expr) => {
         let __trace = timed::Trace::new($name, Some($closure), Some($stats));
+    };
+    ($name:expr, $stats:expr) => {
+        let __trace = timed::Trace::new($name, None, Some($stats));
     };
 }
