@@ -32,7 +32,6 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
     if let Some(true) = options.tracing {
         let begin = quote! {
             {
-                let module_path = std::module_path!();
                 let ts = std::time::SystemTime::now()
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
@@ -42,7 +41,6 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
         };
         let end = quote! {
             {
-                let module_path = std::module_path!();
                 let ts = std::time::SystemTime::now()
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()

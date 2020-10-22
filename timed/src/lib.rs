@@ -115,11 +115,9 @@ impl Trace {
         for (i, hop) in entry.iter().enumerate() {
             if stats == &TracingStats::Statistics {
                 if let Finish(d) = hop.ph {
-                    if !stats_map.contains_key(hop.name.as_str()) {
-                        stats_map.insert(hop.name.clone(), vec![]);
-                    }
-
-                    stats_map.get_mut(hop.name.as_str()).unwrap().push(d);
+                    stats_map.entry(hop.name.clone())
+                        .or_insert(vec![])
+                        .push(d);
                     total_time_nanos += d.as_nanos();
                 }
             }
