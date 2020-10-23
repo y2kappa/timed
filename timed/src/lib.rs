@@ -78,10 +78,11 @@ pub enum Phase {
 }
 
 impl Phase {
+    // These are B and E for chrome tracing
     fn to_string(&self) -> String {
         match self {
-            Phase::Start => "Start".to_string(),
-            Finish(_) => "Finish".to_string()
+            Phase::Start => "B".to_string(),
+            Finish(_) => "E".to_string()
         }
     }
 }
@@ -133,19 +134,7 @@ impl Trace {
 
         match stats {
             TracingStats::None => {}
-            TracingStats::Statistics => {
-                processor("========================\n      Statistics\n========================");
-                stats_map.iter().for_each(|(k, v)| {
-                    let current_total: u128 = v.iter().map(|d| d.as_nanos()).sum();
-                    processor(&format!("- {}\n\t> calls: {:>6}\n\t> total time: {:<11} ({:.5}%)",
-                                       k,
-                                       v.len(),
-                                       format!("{:?}", Duration::from_nanos(current_total as u64)),
-                                       100.0 * current_total as f64 / total_time_nanos as f64
-                    ));
-                });
-                processor(&format!("========================\nall functions total time: {:?}", Duration::from_nanos(total_time_nanos as u64)));
-            }
+            TracingStats::Statistics => Trace::print_statistics(&processor, &stats_map, total_time_nanos)
         }
 
         processor(&format!("Dumping traces took {:?}", start.elapsed()));
@@ -161,6 +150,39 @@ impl Trace {
         };
         Self::register(&trace.id);
         trace
+    }
+
+    fn print_statistics(processor: &fn(&str), stats_map: &HashMap<String, Vec<Duration>>, total_time_nanos: u128) {
+        struct FnStats {
+            name: String,
+            calls: usize,
+            overall_time: Duration,
+        }
+        impl FnStats {
+            fn to_string(&self, total_time_nanos: f64) -> String {
+                format!("- {}\n\t> calls: {:>6}\n\t> total time: {:<11} ({:.5}%)",
+                        self.name,
+                        self.calls,
+                        format!("{:?}", self.overall_time),
+                        100.0 * self.overall_time.as_nanos() as f64 / total_time_nanos
+                )
+            }
+        }
+
+        let mut fn_stats = vec![];
+        processor("========================\n      Statistics\n========================");
+        stats_map.iter().for_each(|(k, v)| {
+            let current_total = v.iter().map(|d| d.as_nanos()).sum::<u128>() as u64;
+            fn_stats.push(FnStats {
+                name: k.to_string(),
+                calls: v.len(),
+                overall_time: Duration::from_nanos(current_total),
+            });
+        });
+
+        fn_stats.sort_by(|x, y| y.overall_time.as_nanos().cmp(&x.overall_time.as_nanos()));
+        fn_stats.iter().for_each(|f| processor(&f.to_string(total_time_nanos as f64)));
+        processor(&format!("========================\nall functions total time: {:?}", Duration::from_nanos(total_time_nanos as u64)));
     }
 }
 

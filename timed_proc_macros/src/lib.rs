@@ -12,20 +12,6 @@ struct MacroArgs {
     tracing: Option<bool>,
 }
 
-// struct Tracing;
-// impl Drop for Tracing {
-//     fn drop(&mut self) {
-//         let traces = TRACES.lock().unwrap();
-//         println!("Begin Dumping traces:\n-----");
-//         println!("[");
-//         for i in 0..traces.len() {
-//             println!("    {}{}", traces[i], if i == traces.len() - 1 { "" } else { ","});
-//         }
-//         println!("]");
-//         println!("-----\nEnd Dumping traces");
-//     }
-// }
-
 use proc_macro2::TokenStream as Code;
 
 fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, Option<Code>) {
@@ -36,7 +22,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::Start, name: #function_name.to_string(), ts});
+                timed::Trace::collect(timed::Hop { ph: timed::Phase::Start, name: format!("{}::{}", module_path, #function_name), ts});
             }
         };
         let end = quote! {
@@ -45,7 +31,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::Finish(elapsed), name: #function_name.to_string(), ts});
+                timed::Trace::collect(timed::Hop { ph: timed::Phase::Finish(elapsed), name: format!("{}::{}", module_path, #function_name), ts});
             }
         };
         (Some(begin), Some(end))
@@ -59,7 +45,7 @@ fn codegen_duration(
     function_name: &str,
 ) -> proc_macro2::TokenStream {
     quote! {
-        #printer("function={} duration={:?}", #function_name, elapsed);
+        #printer("function={} duration={:?}", format!("{}::{}", module_path, #function_name), elapsed);
     }
 }
 
@@ -119,15 +105,15 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
         block: body,
         ..
     } = &function;
-    let name = format!("{}::{}", std::module_path!(), &function.sig.ident);
-    let name_str = name.as_str();
+    let name = function.sig.ident.to_string();
     let printer = codegen_printer(&options);
-    let print_duration = codegen_duration(&printer, name_str);
-    let (tracing_begin, tracing_end) = codegen_tracing(&options, name_str);
+    let print_duration = codegen_duration(&printer, name.as_str());
+    let (tracing_begin, tracing_end) = codegen_tracing(&options, name.as_str());
 
     let result = quote! {
         #(#attrs)*
         #vis #sig {
+           let module_path = std::module_path!();
            #tracing_begin
            let start = std::time::Instant::now();
            let res = { #body };

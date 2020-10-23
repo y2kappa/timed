@@ -42,7 +42,17 @@ pub mod foo {
 #[test]
 #[timed::timed(tracing = true)]
 fn test_tracing() {
-    timed::init_tracing!("Test", TracingStats::Statistics);
+    timed::init_tracing!("Test");
+
+    println!("Running main");
+    sleep();
+    foo();
+}
+
+#[test]
+#[timed::timed(tracing = true)]
+fn test_tracing_with_stats() {
+    timed::init_tracing!("TestWithStats", TracingStats::Statistics);
 
     println!("Running main");
     sleep();
