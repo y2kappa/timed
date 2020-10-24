@@ -50,16 +50,16 @@ pub use timed_proc_macros::timed;
 #[macro_use]
 extern crate lazy_static;
 
+use crate::Phase::Finish;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Duration;
-use crate::Phase::Finish;
 
 lazy_static! {
     static ref TRACES: Mutex<HashMap<String, Vec<Hop>>> = Mutex::new(HashMap::new());
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct TraceOptions {
     pub statistics: Option<fn(&str)>,
     pub chrome_trace: Option<fn(&str)>,
@@ -67,10 +67,7 @@ pub struct TraceOptions {
 
 impl TraceOptions {
     pub fn new() -> TraceOptions {
-        TraceOptions {
-            statistics: None,
-            chrome_trace: None
-        }
+        TraceOptions::default()
     }
 
     pub fn with_statistics(&mut self, f: fn(&str)) -> &mut TraceOptions {
@@ -83,8 +80,8 @@ impl TraceOptions {
         self
     }
 
-    pub fn build(self) -> TraceOptions {
-        self
+    pub fn build_named(self, name: &str) -> Trace {
+        Trace::new(name, self)
     }
 }
 
@@ -104,7 +101,7 @@ impl Phase {
     fn to_string(&self) -> String {
         match self {
             Phase::Start => "B".to_string(),
-            Finish(_) => "E".to_string()
+            Finish(_) => "E".to_string(),
         }
     }
 }
@@ -127,47 +124,6 @@ impl Trace {
         }
     }
 
-    pub fn dump(id: &str, options: &TraceOptions) {
-        if options.chrome_trace.is_none() && options.statistics.is_none() { return; }
-
-        let mut traces = TRACES.lock().unwrap();
-        let entry = traces.entry(id.to_string()).or_insert(vec![]);
-        let mut stats_map = HashMap::new();
-        let mut total_time_nanos: u128 = 0;
-        let mut chrome_trace_string = String::new();
-
-        if options.chrome_trace.is_some() {
-            chrome_trace_string.push_str("[\n");
-        }
-
-        for (i, hop) in entry.iter().enumerate() {
-            if options.statistics.is_some() {
-                if let Finish(d) = hop.ph {
-                    stats_map.entry(hop.name.clone())
-                        .or_insert(vec![])
-                        .push(d);
-                    total_time_nanos += d.as_nanos();
-                }
-            }
-
-            if options.chrome_trace.is_some() {
-                let is_last = i == entry.len() - 1;
-                let trace = format!(
-                    "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
-                    hop.ts, hop.ph.to_string(), hop.name
-                );
-                chrome_trace_string.push_str(&format!("    {}{}\n", trace, if !is_last { "," } else { "" }));
-            }
-        }
-
-        if options.chrome_trace.is_some() {
-            chrome_trace_string.push_str("]");
-        }
-
-        options.chrome_trace.map(|f| f(&chrome_trace_string));
-        options.statistics.map(|f| Trace::print_statistics(&f, &stats_map, total_time_nanos));
-    }
-
     pub fn new(id: &str, options: TraceOptions) -> Trace {
         let trace = Trace {
             id: id.into(),
@@ -177,7 +133,67 @@ impl Trace {
         trace
     }
 
-    fn print_statistics(processor: &fn(&str), stats_map: &HashMap<String, Vec<Duration>>, total_time_nanos: u128) {
+    pub fn finish(self) {
+        self.dump();
+    }
+
+    fn dump(&self) {
+        if self.options.chrome_trace.is_none() && self.options.statistics.is_none() {
+            return;
+        }
+
+        let mut traces = TRACES.lock().unwrap();
+        let entry = traces.entry(self.id.to_string()).or_insert(vec![]);
+        let mut stats_map = HashMap::new();
+        let mut total_time_nanos: u128 = 0;
+        let mut chrome_trace_string = String::new();
+
+        if self.options.chrome_trace.is_some() {
+            chrome_trace_string.push_str("[\n");
+        }
+
+        for (i, hop) in entry.iter().enumerate() {
+            if self.options.statistics.is_some() {
+                if let Finish(d) = hop.ph {
+                    stats_map.entry(hop.name.clone()).or_insert(vec![]).push(d);
+                    total_time_nanos += d.as_nanos();
+                }
+            }
+
+            if self.options.chrome_trace.is_some() {
+                let is_last = i == entry.len() - 1;
+                let trace = format!(
+                    "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
+                    hop.ts,
+                    hop.ph.to_string(),
+                    hop.name
+                );
+                chrome_trace_string.push_str(&format!(
+                    "    {}{}\n",
+                    trace,
+                    if !is_last { "," } else { "" }
+                ));
+            }
+        }
+
+        if self.options.chrome_trace.is_some() {
+            chrome_trace_string.push_str("]");
+        }
+
+        if let Some(f) = self.options.chrome_trace {
+            f(&chrome_trace_string);
+        }
+
+        if let Some(f) = self.options.statistics {
+            Trace::print_statistics(&f, &stats_map, total_time_nanos);
+        }
+    }
+
+    fn print_statistics(
+        processor: &fn(&str),
+        stats_map: &HashMap<String, Vec<Duration>>,
+        total_time_nanos: u128,
+    ) {
         struct FnStats {
             name: String,
             calls: usize,
@@ -185,11 +201,12 @@ impl Trace {
         }
         impl FnStats {
             fn to_string(&self, total_time_nanos: f64) -> String {
-                format!("- {}\n\t> calls: {:>6}\n\t> total time: {:<11} ({:.5}%)",
-                        self.name,
-                        self.calls,
-                        format!("{:?}", self.overall_time),
-                        100.0 * self.overall_time.as_nanos() as f64 / total_time_nanos
+                format!(
+                    "- {}\n\t> calls: {:>6}\n\t> total time: {:<11} ({:.5}%)",
+                    self.name,
+                    self.calls,
+                    format!("{:?}", self.overall_time),
+                    100.0 * self.overall_time.as_nanos() as f64 / total_time_nanos
                 )
             }
         }
@@ -206,20 +223,12 @@ impl Trace {
         });
 
         fn_stats.sort_by(|x, y| y.overall_time.as_nanos().cmp(&x.overall_time.as_nanos()));
-        fn_stats.iter().for_each(|f| processor(&f.to_string(total_time_nanos as f64)));
-        processor(&format!("========================\nall functions total time: {:?}", Duration::from_nanos(total_time_nanos as u64)));
-    }
-}
-
-#[macro_export]
-macro_rules! init_tracing {
-    ($name:expr, $options:expr) => {
-        let __trace = timed::Trace::new($name, $options);
-    };
-}
-
-impl Drop for Trace {
-    fn drop(&mut self) {
-        Trace::dump(&self.id, &self.options);
+        fn_stats
+            .iter()
+            .for_each(|f| processor(&f.to_string(total_time_nanos as f64)));
+        processor(&format!(
+            "========================\nall functions total time: {:?}",
+            Duration::from_nanos(total_time_nanos as u64)
+        ));
     }
 }
