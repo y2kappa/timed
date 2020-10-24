@@ -100,7 +100,11 @@ fn bar() {
 
 #[timed::timed(tracing = true)]
 fn main() {
-    timed::init_tracing!("Main");
+    timed::init_tracing!(
+        "Main", 
+        TraceOptions::new()
+        .with_chrome_trace(|x: &str| println!("{}", x)).build()
+    );
     foo();
 }
 

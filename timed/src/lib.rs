@@ -59,16 +59,38 @@ lazy_static! {
     static ref TRACES: Mutex<HashMap<String, Vec<Hop>>> = Mutex::new(HashMap::new());
 }
 
-#[derive(Eq, PartialEq)]
-pub enum TracingStats {
-    None,
-    Statistics,
+#[derive(Copy, Clone)]
+pub struct TraceOptions {
+    pub statistics: Option<fn(&str)>,
+    pub chrome_trace: Option<fn(&str)>,
+}
+
+impl TraceOptions {
+    pub fn new() -> TraceOptions {
+        TraceOptions {
+            statistics: None,
+            chrome_trace: None
+        }
+    }
+
+    pub fn with_statistics(&mut self, f: fn(&str)) -> &mut TraceOptions {
+        self.statistics = Some(f);
+        self
+    }
+
+    pub fn with_chrome_trace(&mut self, f: fn(&str)) -> &mut TraceOptions {
+        self.chrome_trace = Some(f);
+        self
+    }
+
+    pub fn build(self) -> TraceOptions {
+        self
+    }
 }
 
 pub struct Trace {
     id: String,
-    processor: fn(&str),
-    stats: TracingStats,
+    options: TraceOptions,
 }
 
 #[derive(Clone)]
@@ -105,16 +127,21 @@ impl Trace {
         }
     }
 
-    pub fn dump(id: &str, processor: fn(&str), stats: &TracingStats) {
-        let start = std::time::Instant::now();
+    pub fn dump(id: &str, options: &TraceOptions) {
+        if options.chrome_trace.is_none() && options.statistics.is_none() { return; }
+
         let mut traces = TRACES.lock().unwrap();
         let entry = traces.entry(id.to_string()).or_insert(vec![]);
         let mut stats_map = HashMap::new();
         let mut total_time_nanos: u128 = 0;
+        let mut chrome_trace_string = String::new();
 
-        processor("[");
+        if options.chrome_trace.is_some() {
+            chrome_trace_string.push_str("[\n");
+        }
+
         for (i, hop) in entry.iter().enumerate() {
-            if stats == &TracingStats::Statistics {
+            if options.statistics.is_some() {
                 if let Finish(d) = hop.ph {
                     stats_map.entry(hop.name.clone())
                         .or_insert(vec![])
@@ -123,30 +150,28 @@ impl Trace {
                 }
             }
 
-            let is_last = i == entry.len() - 1;
-            let trace = format!(
-                "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
-                hop.ts, hop.ph.to_string(), hop.name
-            );
-            processor(&format!("    {}{}", trace, if !is_last { "," } else { "" }));
-        }
-        processor("]");
-
-        match stats {
-            TracingStats::None => {}
-            TracingStats::Statistics => Trace::print_statistics(&processor, &stats_map, total_time_nanos)
+            if options.chrome_trace.is_some() {
+                let is_last = i == entry.len() - 1;
+                let trace = format!(
+                    "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
+                    hop.ts, hop.ph.to_string(), hop.name
+                );
+                chrome_trace_string.push_str(&format!("    {}{}\n", trace, if !is_last { "," } else { "" }));
+            }
         }
 
-        processor(&format!("Dumping traces took {:?}", start.elapsed()));
+        if options.chrome_trace.is_some() {
+            chrome_trace_string.push_str("]");
+        }
+
+        options.chrome_trace.map(|f| f(&chrome_trace_string));
+        options.statistics.map(|f| Trace::print_statistics(&f, &stats_map, total_time_nanos));
     }
 
-    pub fn new(id: &str, processor: Option<fn(&str)>, stats: Option<TracingStats>) -> Trace {
+    pub fn new(id: &str, options: TraceOptions) -> Trace {
         let trace = Trace {
             id: id.into(),
-            processor: processor.unwrap_or(|x: &str| {
-                println!("{}", x);
-            }),
-            stats: stats.unwrap_or(TracingStats::None),
+            options,
         };
         Self::register(&trace.id);
         trace
@@ -186,27 +211,15 @@ impl Trace {
     }
 }
 
-impl Drop for Trace {
-    fn drop(&mut self) {
-        Trace::dump(&self.id, self.processor, &self.stats);
-    }
-}
-
 #[macro_export]
 macro_rules! init_tracing {
-    () => {
-        let __trace = timed::Trace::new("Tracing", None, None);
+    ($name:expr, $options:expr) => {
+        let __trace = timed::Trace::new($name, $options);
     };
-    ($name:expr) => {
-        let __trace = timed::Trace::new($name, None, None);
-    };
-    ($name:expr, $closure:tt) => {
-        let __trace = timed::Trace::new($name, Some($closure), None);
-    };
-    ($name:expr, $closure:tt, $stats:expr) => {
-        let __trace = timed::Trace::new($name, Some($closure), Some($stats));
-    };
-    ($name:expr, $stats:expr) => {
-        let __trace = timed::Trace::new($name, None, Some($stats));
-    };
+}
+
+impl Drop for Trace {
+    fn drop(&mut self) {
+        Trace::dump(&self.id, &self.options);
+    }
 }

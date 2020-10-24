@@ -1,6 +1,5 @@
 use std::{thread, time};
 use timed;
-use timed::TracingStats;
 
 #[allow(dead_code)]
 fn sleep() {
@@ -41,8 +40,11 @@ pub mod foo {
 
 #[test]
 #[timed::timed(tracing = true)]
-fn test_tracing() {
-    timed::init_tracing!("Test");
+fn test_tracing_chrome_tracing() {
+    timed::init_tracing!("Test", timed::TraceOptions::new()
+    .with_chrome_trace(
+        |x: &str| println!("{}", x)
+    ).build());
 
     println!("Running main");
     sleep();
@@ -52,7 +54,35 @@ fn test_tracing() {
 #[test]
 #[timed::timed(tracing = true)]
 fn test_tracing_with_stats() {
-    timed::init_tracing!("TestWithStats", TracingStats::Statistics);
+    timed::init_tracing!("TestWithStats", timed::TraceOptions::new()
+    .with_statistics(
+        |x: &str| println!("{}", x)
+    ).build());
+
+    println!("Running main");
+    sleep();
+    foo();
+}
+
+#[test]
+#[timed::timed(tracing = true)]
+fn test_tracing_with_both() {
+    timed::init_tracing!("TestWithBoth", timed::TraceOptions::new()
+    .with_statistics(
+        |x: &str| println!("{}", x)
+    ).with_chrome_trace(
+        |x: &str| println!("{}", x)
+    ).build());
+
+    println!("Running main");
+    sleep();
+    foo();
+}
+
+#[test]
+#[timed::timed(tracing = true)]
+fn test_tracing_with_none() {
+    timed::init_tracing!("TestWithNone", timed::TraceOptions::new().build());
 
     println!("Running main");
     sleep();
