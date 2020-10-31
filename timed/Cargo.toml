@@ -18,3 +18,4 @@ include = [
 #timed_proc_macros = { version = "0.1.1" }
 timed_proc_macros = { path = "../timed_proc_macros" }
 lazy_static = "1.4.0"
+thiserror = "1.0.21"

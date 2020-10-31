@@ -45,96 +45,62 @@
 //!
 //! ```
 
+mod interface;
+mod chrome_trace;
+mod statistics;
+
+pub use interface::*;
+pub use chrome_trace::*;
+pub use statistics::*;
 pub use timed_proc_macros::timed;
 
 #[macro_use]
 extern crate lazy_static;
+extern crate thiserror;
 
 use crate::Phase::Finish;
 use std::collections::HashMap;
-use std::sync::Mutex;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum TimedError {
+    #[error("Tracing can only be initialized once")]
+    TracingInitializationFailed,
+    #[error("Tracing finish failed: {0}")]
+    TracingFinishFailed(String)
+}
+
+type Result<T> = std::result::Result<T, TimedError>;
 
 lazy_static! {
-    static ref TRACES: Mutex<HashMap<String, Vec<Hop>>> = Mutex::new(HashMap::new());
-}
-
-#[derive(Copy, Clone, Default)]
-pub struct TraceOptions {
-    pub statistics: Option<fn(&str)>,
-    pub chrome_trace: Option<fn(&str)>,
-}
-
-impl TraceOptions {
-    pub fn new() -> TraceOptions {
-        TraceOptions::default()
-    }
-
-    pub fn with_statistics(&mut self, f: fn(&str)) -> &mut TraceOptions {
-        self.statistics = Some(f);
-        self
-    }
-
-    pub fn with_chrome_trace(&mut self, f: fn(&str)) -> &mut TraceOptions {
-        self.chrome_trace = Some(f);
-        self
-    }
-
-    pub fn build_named(self, name: &str) -> Trace {
-        Trace::new(name, self)
-    }
+    static ref TRACE: Arc<Mutex<Trace>> = Arc::new(Mutex::new(Trace::empty()));
 }
 
 pub struct Trace {
-    id: String,
     options: TraceOptions,
-}
-
-#[derive(Clone)]
-pub enum Phase {
-    Start,
-    Finish(Duration),
-}
-
-impl Phase {
-    // These are B and E for chrome tracing
-    fn to_string(&self) -> String {
-        match self {
-            Phase::Start => "B".to_string(),
-            Finish(_) => "E".to_string(),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Hop {
-    pub ts: u128,
-    pub ph: Phase,
-    pub name: String,
+    trace_data: Vec<ChromeTraceRecord>,
+    is_initialized: bool,
+    is_finished: bool,
 }
 
 impl Trace {
-    pub fn register(id: &str) {
-        TRACES.lock().unwrap().insert(id.to_string(), vec![]);
-    }
-
-    pub fn collect(hop: Hop) {
-        for trace_group in TRACES.lock().unwrap().iter_mut() {
-            trace_group.1.push(hop.clone());
+    pub(crate) fn empty() -> Trace {
+        Trace {
+            options: TraceOptions::default(),
+            trace_data: vec![],
+            is_initialized: false,
+            is_finished: false
         }
     }
-
-    pub fn new(id: &str, options: TraceOptions) -> Trace {
-        let trace = Trace {
-            id: id.into(),
-            options,
-        };
-        Self::register(&trace.id);
-        trace
+    pub(crate) fn set_options(&mut self, options: TraceOptions) {
+        self.options = options;
+        self.is_initialized = true;
     }
 
-    pub fn finish(self) {
+    pub fn finish(&mut self) {
         self.dump();
+        self.is_finished = true;
     }
 
     fn dump(&self) {
@@ -142,93 +108,73 @@ impl Trace {
             return;
         }
 
-        let mut traces = TRACES.lock().unwrap();
-        let entry = traces.entry(self.id.to_string()).or_insert(vec![]);
         let mut stats_map = HashMap::new();
-        let mut total_time_nanos: u128 = 0;
-        let mut chrome_trace_string = String::new();
+        let mut chrome_trace_result = ChromeTraceResult::new();
 
-        if self.options.chrome_trace.is_some() {
-            chrome_trace_string.push_str("[\n");
-        }
-
-        for (i, hop) in entry.iter().enumerate() {
+        self.trace_data.iter().for_each(|chrome_trace_record| {
             if self.options.statistics.is_some() {
-                if let Finish(d) = hop.ph {
-                    stats_map.entry(hop.name.clone()).or_insert(vec![]).push(d);
-                    total_time_nanos += d.as_nanos();
+                if let Finish(d) = chrome_trace_record.ph {
+                    stats_map.entry(chrome_trace_record.name.clone()).or_insert(vec![]).push(d);
                 }
             }
 
             if self.options.chrome_trace.is_some() {
-                let is_last = i == entry.len() - 1;
-                let trace = format!(
-                    "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
-                    hop.ts,
-                    hop.ph.to_string(),
-                    hop.name
-                );
-                chrome_trace_string.push_str(&format!(
-                    "    {}{}\n",
-                    trace,
-                    if !is_last { "," } else { "" }
-                ));
+                chrome_trace_result.records.push(chrome_trace_record.clone());
             }
-        }
-
-        if self.options.chrome_trace.is_some() {
-            chrome_trace_string.push_str("]");
-        }
-
-        if let Some(f) = self.options.chrome_trace {
-            f(&chrome_trace_string);
-        }
-
-        if let Some(f) = self.options.statistics {
-            Trace::print_statistics(&f, &stats_map, total_time_nanos);
-        }
-    }
-
-    fn print_statistics(
-        processor: &fn(&str),
-        stats_map: &HashMap<String, Vec<Duration>>,
-        total_time_nanos: u128,
-    ) {
-        struct FnStats {
-            name: String,
-            calls: usize,
-            overall_time: Duration,
-        }
-        impl FnStats {
-            fn to_string(&self, total_time_nanos: f64) -> String {
-                format!(
-                    "- {}\n\t> calls: {:>6}\n\t> total time: {:<11} ({:.5}%)",
-                    self.name,
-                    self.calls,
-                    format!("{:?}", self.overall_time),
-                    100.0 * self.overall_time.as_nanos() as f64 / total_time_nanos
-                )
-            }
-        }
-
-        let mut fn_stats = vec![];
-        processor("========================\n      Statistics\n========================");
-        stats_map.iter().for_each(|(k, v)| {
-            let current_total = v.iter().map(|d| d.as_nanos()).sum::<u128>() as u64;
-            fn_stats.push(FnStats {
-                name: k.to_string(),
-                calls: v.len(),
-                overall_time: Duration::from_nanos(current_total),
-            });
         });
 
-        fn_stats.sort_by(|x, y| y.overall_time.as_nanos().cmp(&x.overall_time.as_nanos()));
-        fn_stats
-            .iter()
-            .for_each(|f| processor(&f.to_string(total_time_nanos as f64)));
-        processor(&format!(
-            "========================\nall functions total time: {:?}",
-            Duration::from_nanos(total_time_nanos as u64)
-        ));
+        if let Some(chrome_trace_callback) = self.options.chrome_trace.as_ref() {
+            chrome_trace_callback(&chrome_trace_result);
+        }
+
+        if let Some(statistics_callback) = self.options.statistics.as_ref() {
+            statistics_callback(&StatisticsResult::from_raw_map(&stats_map));
+        }
+    }
+}
+
+pub fn collect(chrome_trace_record: ChromeTraceRecord) {
+    TRACE.lock().unwrap().trace_data.push(chrome_trace_record);
+}
+
+pub fn init_tracing(options: TraceOptions) -> Result<()> {
+    let mut trace = &mut *TRACE.lock().unwrap();
+
+    if !trace.is_initialized {
+        trace.set_options(options);
+
+        return Ok(());
+    }
+
+    return Err(TimedError::TracingInitializationFailed);
+}
+
+pub fn finish_tracing() -> Result<()> {
+    let mut trace = &mut *TRACE.lock().unwrap();
+
+    if trace.is_initialized {
+        if !trace.is_finished {
+            trace.finish();
+            return Ok(());
+        }
+
+        return Err(TimedError::TracingFinishFailed("Tracing finish can only be called once".to_string()));
+    }
+
+    return Err(TimedError::TracingFinishFailed("Tracing initialization must be called before finish".to_string()));
+}
+
+#[macro_export]
+macro_rules! init_tracing {
+    ($options:expr) => {
+        {
+            let mut trace = *TRACE.lock().unwrap();
+
+            if !trace.is_initialized {
+                trace.set_options($options);
+            }
+
+            panic!("init_tracing can only be called once");
+        }
     }
 }

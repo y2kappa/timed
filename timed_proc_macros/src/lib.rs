@@ -22,7 +22,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::Start, name: format!("{}::{}", module_path, #function_name), ts});
+                timed::collect(timed::ChromeTraceRecord { ph: timed::Phase::Start, name: format!("{}::{}", module_path, #function_name), ts});
             }
         };
         let end = quote! {
@@ -31,7 +31,7 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::Finish(elapsed), name: format!("{}::{}", module_path, #function_name), ts});
+                timed::collect(timed::ChromeTraceRecord { ph: timed::Phase::Finish(elapsed), name: format!("{}::{}", module_path, #function_name), ts});
             }
         };
         (Some(begin), Some(end))
