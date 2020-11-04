@@ -7,9 +7,7 @@ use syn::{AttributeArgs, ItemFn};
 #[derive(Debug, FromMeta)]
 struct MacroArgs {
     #[darling(default)]
-    printer: Option<String>,
-    #[darling(default)]
-    tracing: Option<bool>,
+    tracing: Option<bool>
 }
 
 use proc_macro2::TokenStream as Code;
@@ -22,7 +20,11 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::collect(timed::ChromeTraceRecord { ph: timed::Phase::Start, name: format!("{}::{}", module_path, #function_name), ts});
+                timed::collect(timed::TraceRecord {
+                    function_name: format!("{}::{}", module_path, #function_name),
+                    timestamp: ts,
+                    phase: timed::Phase::Start
+                });
             }
         };
         let end = quote! {
@@ -31,45 +33,16 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::collect(timed::ChromeTraceRecord { ph: timed::Phase::Finish(elapsed), name: format!("{}::{}", module_path, #function_name), ts});
+                timed::collect(timed::TraceRecord {
+                    function_name: format!("{}::{}", module_path, #function_name),
+                    timestamp: ts,
+                    phase: timed::Phase::Finish(elapsed)
+                });
             }
         };
         (Some(begin), Some(end))
     } else {
         (None, None)
-    }
-}
-
-fn codegen_duration(
-    printer: &proc_macro2::TokenStream,
-    function_name: &str,
-) -> proc_macro2::TokenStream {
-    quote! {
-        #printer("function={} duration={:?}", format!("{}::{}", module_path, #function_name), elapsed);
-    }
-}
-
-fn codegen_printer(options: &MacroArgs) -> proc_macro2::TokenStream {
-    let (printer, needs_bang) = match &options.printer {
-        Some(printer) => {
-            if printer.ends_with('!') {
-                (&printer[..&printer.len() - 1], true)
-            } else {
-                (printer.as_str(), false)
-            }
-        }
-        None => ("println", true),
-    };
-
-    let bang = if needs_bang {
-        Some(syn::token::Bang(Span::call_site()))
-    } else {
-        None
-    };
-
-    let printer = syn::Ident::new(printer, Span::call_site());
-    quote! {
-        #printer#bang
     }
 }
 
@@ -106,8 +79,6 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
         ..
     } = &function;
     let name = function.sig.ident.to_string();
-    let printer = codegen_printer(&options);
-    let print_duration = codegen_duration(&printer, name.as_str());
     let (tracing_begin, tracing_end) = codegen_tracing(&options, name.as_str());
 
     let result = quote! {
@@ -118,7 +89,6 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
            let start = std::time::Instant::now();
            let res = { #body };
            let elapsed = start.elapsed();
-           #print_duration
            #tracing_end
            res
         }

@@ -18,7 +18,7 @@ fn bar() {
 
 #[timed::timed(tracing = true)]
 fn main() {
-    let trace = timed::TraceOptions::new()
+    let trace = timed::TraceCollectorChain::new()
         .with_chrome_trace(|x: &str| println!("{}", x))
         .build_named("Tests");
 

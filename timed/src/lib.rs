@@ -45,103 +45,53 @@
 //!
 //! ```
 
-mod interface;
-mod chrome_trace;
-mod statistics;
-
-pub use interface::*;
-pub use chrome_trace::*;
-pub use statistics::*;
-pub use timed_proc_macros::timed;
-
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate prettytable;
 extern crate thiserror;
 
-use crate::Phase::Finish;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+
 use thiserror::Error;
+
+pub use interface::*;
+pub use statistics::*;
+pub use timed_proc_macros::timed;
+pub use trace::*;
+
+use crate::Phase::Finish;
+
+mod interface;
+mod trace;
+mod statistics;
+pub mod default_exts;
 
 #[derive(Error, Debug)]
 pub enum TimedError {
     #[error("Tracing can only be initialized once")]
     TracingInitializationFailed,
     #[error("Tracing finish failed: {0}")]
-    TracingFinishFailed(String)
+    TracingFinishFailed(String),
 }
 
 type Result<T> = std::result::Result<T, TimedError>;
 
 lazy_static! {
-    static ref TRACE: Arc<Mutex<Trace>> = Arc::new(Mutex::new(Trace::empty()));
+    static ref CHAIN: Arc<Mutex<TraceCollectorChain>> = Arc::new(Mutex::new(TraceCollectorChain::new()));
 }
 
-pub struct Trace {
-    options: TraceOptions,
-    trace_data: Vec<ChromeTraceRecord>,
-    is_initialized: bool,
-    is_finished: bool,
+pub fn collect(trace_record: TraceRecord) {
+    CHAIN.lock().unwrap().buffers.iter_mut().for_each(|collector|
+        collector.lock().unwrap().add(trace_record.clone()));
 }
 
-impl Trace {
-    pub(crate) fn empty() -> Trace {
-        Trace {
-            options: TraceOptions::default(),
-            trace_data: vec![],
-            is_initialized: false,
-            is_finished: false
-        }
-    }
-    pub(crate) fn set_options(&mut self, options: TraceOptions) {
-        self.options = options;
-        self.is_initialized = true;
-    }
+pub fn init_tracing(chain: &mut TraceCollectorChain) -> Result<()> {
+    let mut trace = &mut *CHAIN.lock().unwrap();
 
-    pub fn finish(&mut self) {
-        self.dump();
-        self.is_finished = true;
-    }
-
-    fn dump(&self) {
-        if self.options.chrome_trace.is_none() && self.options.statistics.is_none() {
-            return;
-        }
-
-        let mut stats_map = HashMap::new();
-        let mut chrome_trace_result = ChromeTraceResult::new();
-
-        self.trace_data.iter().for_each(|chrome_trace_record| {
-            if self.options.statistics.is_some() {
-                if let Finish(d) = chrome_trace_record.ph {
-                    stats_map.entry(chrome_trace_record.name.clone()).or_insert(vec![]).push(d);
-                }
-            }
-
-            if self.options.chrome_trace.is_some() {
-                chrome_trace_result.records.push(chrome_trace_record.clone());
-            }
-        });
-
-        if let Some(chrome_trace_callback) = self.options.chrome_trace.as_ref() {
-            chrome_trace_callback(&chrome_trace_result);
-        }
-
-        if let Some(statistics_callback) = self.options.statistics.as_ref() {
-            statistics_callback(&StatisticsResult::from_raw_map(&stats_map));
-        }
-    }
-}
-
-pub fn collect(chrome_trace_record: ChromeTraceRecord) {
-    TRACE.lock().unwrap().trace_data.push(chrome_trace_record);
-}
-
-pub fn init_tracing(options: TraceOptions) -> Result<()> {
-    let mut trace = &mut *TRACE.lock().unwrap();
-
-    if !trace.is_initialized {
-        trace.set_options(options);
+    if trace.buffers.is_empty() {
+        trace.buffers.append(&mut chain.buffers);
 
         return Ok(());
     }
@@ -149,32 +99,17 @@ pub fn init_tracing(options: TraceOptions) -> Result<()> {
     return Err(TimedError::TracingInitializationFailed);
 }
 
-pub fn finish_tracing() -> Result<()> {
-    let mut trace = &mut *TRACE.lock().unwrap();
-
-    if trace.is_initialized {
-        if !trace.is_finished {
-            trace.finish();
-            return Ok(());
-        }
-
-        return Err(TimedError::TracingFinishFailed("Tracing finish can only be called once".to_string()));
-    }
-
-    return Err(TimedError::TracingFinishFailed("Tracing initialization must be called before finish".to_string()));
-}
-
 #[macro_export]
-macro_rules! init_tracing {
-    ($options:expr) => {
-        {
-            let mut trace = *TRACE.lock().unwrap();
-
-            if !trace.is_initialized {
-                trace.set_options($options);
+macro_rules! anonymous_collector {
+    ($closure:expr) => {
+        Box::new((|| {
+            struct Anonymous;
+            impl timed::Collector for Anonymous {
+                fn collect(&mut self, record: &timed::TraceRecord) {
+                    $closure(record);
+                }
             }
-
-            panic!("init_tracing can only be called once");
-        }
+            Anonymous
+        })())
     }
 }

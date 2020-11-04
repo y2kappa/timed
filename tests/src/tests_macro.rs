@@ -1,7 +1,6 @@
 use timed::{ChromeTraceResult, StatisticsResult};
 
 fn main() {
-    let _ = timed::init_tracing(*timed::TraceOptions::new()
-        .with_chrome_trace(|x: &ChromeTraceResult| println!("{}", x.to_string()))
-        .with_statistics(|x: &StatisticsResult| println!("{:?}", x)));
+    // let _ = timed::init_tracing(timed::TraceCollectorChain::new()
+    //     .chain_output(timed::anonymous_collector!(|x: &timed::TraceRecord| println!("{}", x.to_chrome_trace()))));
 }

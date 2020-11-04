@@ -1,24 +1,36 @@
-use crate::{Trace, ChromeTraceResult, StatisticsResult, ChromeTraceRecord};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
-#[derive(Copy, Clone, Default)]
-pub struct TraceOptions {
-    pub statistics: Option<fn(&StatisticsResult)>,
-    pub chrome_trace: Option<fn(&ChromeTraceResult)>,
+use crate::TraceRecord;
+
+pub struct RecordBuffer {
+    data: Vec<TraceRecord>
 }
 
-impl TraceOptions {
-    pub fn new() -> TraceOptions {
-        TraceOptions::default()
+impl RecordBuffer {
+    pub fn new() -> Arc<Mutex<Self>> {
+        Arc::new(Mutex::new(RecordBuffer { data: vec![] }))
     }
 
-    pub fn with_statistics(&mut self, f: fn(&StatisticsResult)) -> &mut TraceOptions {
-        self.statistics = Some(f);
-        self
+    pub fn add(&mut self, record: TraceRecord) {
+        self.data.push(record);
     }
 
-    pub fn with_chrome_trace(&mut self, f: fn(&ChromeTraceResult)) -> &mut TraceOptions {
-        self.chrome_trace = Some(f);
+    pub fn drain(&mut self) -> Vec<TraceRecord> {
+        self.data.drain(..).collect()
+    }
+}
+
+pub struct TraceCollectorChain {
+    pub buffers: Vec<Arc<Mutex<RecordBuffer>>>,
+}
+
+impl TraceCollectorChain {
+    pub fn new() -> TraceCollectorChain {
+        TraceCollectorChain { buffers: vec![] }
+    }
+
+    pub fn chain_output(&mut self, buffer: Arc<Mutex<RecordBuffer>>) -> &mut TraceCollectorChain {
+        self.buffers.push(buffer);
         self
     }
 }
