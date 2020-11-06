@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use prettytable::{Table, Row, Cell};
 use crate::{Phase, RecordBuffer};
+use std::fs::File;
 
 #[derive(Clone, Debug)]
 struct StatisticsRecord {
@@ -64,11 +65,11 @@ impl PartialEq for StatisticsRecord {
 impl Eq for StatisticsRecord {}
 
 pub trait StatisticsExt {
-    fn print_statistics(&mut self);
+    fn get_statistics(&mut self) -> Table;
 }
 
 impl StatisticsExt for RecordBuffer {
-    fn print_statistics(&mut self) {
+    fn get_statistics(&mut self) -> Table {
         let mut stats = HashMap::new();
 
         self.drain()
@@ -97,6 +98,6 @@ impl StatisticsExt for RecordBuffer {
            ]);
         });
 
-        table.printstd();
+        return table;
     }
 }

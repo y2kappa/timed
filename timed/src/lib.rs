@@ -57,15 +57,11 @@ use std::sync::{Arc, Mutex};
 use thiserror::Error;
 
 pub use interface::*;
-pub use statistics::*;
 pub use timed_proc_macros::timed;
-pub use trace::*;
 
 use crate::Phase::Finish;
 
 mod interface;
-mod trace;
-mod statistics;
 pub mod default_exts;
 
 #[derive(Error, Debug)]

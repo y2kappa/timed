@@ -3,9 +3,10 @@ use std::{thread, time};
 use rusty_fork::rusty_fork_test;
 
 use timed;
-use timed::{ChromeTraceResult, StatisticsResult, TraceRecord, RecordBuffer};
+use timed::{TraceRecord, RecordBuffer};
 use std::sync::{Arc, Mutex};
-use timed::default_exts::StatisticsExt;
+use timed::default_exts::statistics::StatisticsExt;
+use timed::default_exts::chrome_trace::ChromeTraceExt;
 
 #[allow(dead_code)]
 fn sleep() {
@@ -50,9 +51,11 @@ pub mod foo {
 #[timed::timed(tracing = true)]
 fn test_tracing_chrome_tracing() {
     let mut statistics = RecordBuffer::new();
+    let mut chrome_trace = RecordBuffer::new();
 
     let _ = timed::init_tracing(timed::TraceCollectorChain::new()
-        .chain_output(Arc::clone(&statistics))).unwrap();
+        .chain_output(Arc::clone(&statistics))
+        .chain_output(Arc::clone(&chrome_trace))).unwrap();
 
     println!("Running main");
     sleep();
@@ -60,7 +63,9 @@ fn test_tracing_chrome_tracing() {
         foo();
     }
 
-    statistics.lock().unwrap().print_statistics();
+    // println!("{:?}", statistics.lock().unwrap().drain());
+    statistics.lock().unwrap().get_statistics().printstd();
+    println!("{}", chrome_trace.lock().unwrap().get_chrome_trace().to_chrome_trace());
 }
 // }
 
