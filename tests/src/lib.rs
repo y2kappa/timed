@@ -1,6 +1,5 @@
 mod tests_macro;
 
-#[macro_use]
 extern crate log;
 
 mod tests_duration;

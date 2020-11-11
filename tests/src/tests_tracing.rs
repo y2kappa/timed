@@ -3,8 +3,8 @@ use std::{thread, time};
 use rusty_fork::rusty_fork_test;
 
 use timed;
-use timed::{TraceRecord, RecordBuffer};
-use std::sync::{Arc, Mutex};
+use timed::RecordBuffer;
+use std::sync::Arc;
 use timed::default_exts::statistics::StatisticsExt;
 use timed::default_exts::chrome_trace::ChromeTraceExt;
 
@@ -14,101 +14,44 @@ fn sleep() {
 }
 
 #[timed::timed(tracing = true)]
-fn foo() {
-    bar();
+fn outer_sleep() {
     sleep();
-    baz();
+    inner_sleep();
 }
 
 #[timed::timed(tracing = true)]
-fn bar() {
-    sleep();
-    baz();
+fn inner_sleep() {
     sleep();
 }
 
-#[timed::timed(tracing = true)]
-fn baz() {
-    sleep();
-    foo::bar::baz::foobar();
-}
+rusty_fork_test! {
+    #[test]
+    #[timed::timed(tracing = true)]
+    fn test_tracing_statistics() {
+        let mut statistics = RecordBuffer::new();
 
-pub mod foo {
-    pub mod bar {
-        pub mod baz {
-            use timed::timed;
+        let _ = timed::init_tracing(timed::TraceCollectorChain::new()
+            .chain_output(Arc::clone(&statistics))).unwrap();
 
-            #[timed(tracing = true)]
-            pub fn foobar() {
-                println!("Foobar");
-            }
-        }
+        println!("Running main");
+        outer_sleep();
+
+        statistics.lock().unwrap().get_statistics().printstd();
     }
 }
 
-// rusty_fork_test! {
-#[test]
-#[timed::timed(tracing = true)]
-fn test_tracing_chrome_tracing() {
-    let mut statistics = RecordBuffer::new();
-    let mut chrome_trace = RecordBuffer::new();
+rusty_fork_test! {
+    #[test]
+    #[timed::timed(tracing = true)]
+    fn test_tracing_chrome_trace() {
+        let mut chrome_trace = RecordBuffer::new();
 
-    let _ = timed::init_tracing(timed::TraceCollectorChain::new()
-        .chain_output(Arc::clone(&statistics))
-        .chain_output(Arc::clone(&chrome_trace))).unwrap();
+        let _ = timed::init_tracing(timed::TraceCollectorChain::new()
+            .chain_output(Arc::clone(&chrome_trace))).unwrap();
 
-    println!("Running main");
-    sleep();
-    for i in 0..5 {
-        foo();
+        println!("Running main");
+        outer_sleep();
+
+        println!("{}", chrome_trace.lock().unwrap().get_chrome_trace().to_chrome_trace());
     }
-
-    // println!("{:?}", statistics.lock().unwrap().drain());
-    statistics.lock().unwrap().get_statistics().printstd();
-    println!("{}", chrome_trace.lock().unwrap().get_chrome_trace().to_chrome_trace());
 }
-// }
-
-// rusty_fork_test! {
-//     #[test]
-//     #[timed::timed(tracing = true)]
-//     fn test_tracing_with_stats() {
-//         let _ = timed::init_tracing(*timed::TraceCollectorChain::new()
-//             .with_statistics(|x: &StatisticsResult| println!("{:?}", x))).unwrap();
-//
-//         println!("Running main");
-//         sleep();
-//         foo();
-//
-//         let _ = timed::finish_tracing().unwrap();
-//     }
-// }
-// rusty_fork_test! {
-//     #[test]
-//     #[timed::timed(tracing = true)]
-//     fn test_tracing_with_both() {
-//         let _ = timed::init_tracing(*timed::TraceCollectorChain::new()
-//             .with_statistics(|x: &StatisticsResult| println!("{:?}", x))
-//             .with_chrome_trace(|x: &ChromeTraceResult| println!("{}", x.to_chrome_trace()))).unwrap();
-//
-//         println!("Running main");
-//         sleep();
-//         foo();
-//
-//         let _ = timed::finish_tracing().unwrap();
-//     }
-// }
-//
-// rusty_fork_test! {
-//     #[test]
-//     #[timed::timed(tracing = true)]
-//     fn test_tracing_with_none() {
-//         let _ = timed::init_tracing(timed::TraceCollectorChain::new()).unwrap();
-//
-//         println!("Running main");
-//         sleep();
-//         foo();
-//
-//         let _ = timed::finish_tracing().unwrap();
-//     }
-// }

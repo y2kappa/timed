@@ -51,15 +51,12 @@ extern crate lazy_static;
 extern crate prettytable;
 extern crate thiserror;
 
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use thiserror::Error;
 
 pub use interface::*;
 pub use timed_proc_macros::timed;
-
-use crate::Phase::Finish;
 
 mod interface;
 pub mod default_exts;
@@ -84,7 +81,7 @@ pub fn collect(trace_record: TraceRecord) {
 }
 
 pub fn init_tracing(chain: &mut TraceCollectorChain) -> Result<()> {
-    let mut trace = &mut *CHAIN.lock().unwrap();
+    let trace = &mut *CHAIN.lock().unwrap();
 
     if trace.buffers.is_empty() {
         trace.buffers.append(&mut chain.buffers);

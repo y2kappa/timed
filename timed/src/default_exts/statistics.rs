@@ -1,9 +1,8 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::time::Duration;
-use prettytable::{Table, Row, Cell};
+use prettytable::Table;
 use crate::{Phase, RecordBuffer};
-use std::fs::File;
 
 #[derive(Clone, Debug)]
 struct StatisticsRecord {
@@ -76,7 +75,7 @@ impl StatisticsExt for RecordBuffer {
             .iter()
             .for_each(|record| {
                 if let Phase::Finish(d) = record.phase {
-                    let mut entry = stats.entry(record.function_name.clone())
+                    let entry = stats.entry(record.function_name.clone())
                         .or_insert(StatisticsRecord::new(record.function_name.clone()));
                     entry.calls.push(d);
                     entry.overall_time += d;
