@@ -2,9 +2,33 @@
 command = "cargo"
 args = ["build"]
 
-[tasks.run_macros]
+[tasks.example_async]
 command = "cargo"
-args = ["run", "--bin", "tests_macro"]
+args = ["run", "--example", "demo_async"]
+
+[tasks.example_duration]
+command = "cargo"
+args = ["run", "--example", "demo_duration"]
+
+[tasks.example_main]
+command = "cargo"
+args = ["run", "--example", "demo_main"]
+
+[tasks.example_main_info]
+command = "cargo"
+args = ["run", "--example", "demo_main_info"]
+
+[tasks.example_main_nested]
+command = "cargo"
+args = ["run", "--example", "demo_main_nested"]
+
+[tasks.example_tracing]
+command = "cargo"
+args = ["run", "--example", "demo_tracing"]
+
+[tasks.example_statistics]
+command = "cargo"
+args = ["run", "--example", "demo_statistics"]
 
 [tasks.run_expand]
 command = "cargo"

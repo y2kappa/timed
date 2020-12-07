@@ -18,12 +18,16 @@ fn foo() {
 #[timed::timed(tracing(enabled = true))]
 fn baz() {
     println!("Hello");
-    one::two::three::deep();
+    for _ in 0..3 {
+        one::two::three::deep();
+    }
 }
 
 #[timed::timed(tracing(enabled = true))]
 fn bar() {
-    baz();
+    for _ in 0..10 {
+        baz();
+    }
 }
 
 #[timed::timed(tracing(enabled = true))]
@@ -33,6 +37,6 @@ fn main() {
 
     foo();
 
-    println!("{}", trace.chrome_tracing());
+    println!("{}", trace.statistics());
 
 }

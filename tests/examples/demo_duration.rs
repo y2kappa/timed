@@ -22,8 +22,7 @@ fn mul_info(x: i32, y: i32) -> i32 {
     x * y
 }
 
-#[test]
-fn timing() {
+fn main() {
     pretty_env_logger::init();
 
     assert_eq!(add(1, 2), 3);

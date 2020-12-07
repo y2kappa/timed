@@ -45,64 +45,27 @@
 //!
 //! ```
 
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate prettytable;
-extern crate thiserror;
-
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
-use thiserror::Error;
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate prettytable;
+#[macro_use] extern crate thiserror;
 
-pub use interface::*;
+mod chrome_trace;
+mod error;
+mod hop;
+mod trace;
+mod statistics;
+
+// export Trace
+pub use trace::Trace;
+pub use hop::{Phase, Hop};
+
+// Re-exporting the timed proc macro
 pub use timed_proc_macros::timed;
 
-mod interface;
-pub mod default_exts;
-
-#[derive(Error, Debug)]
-pub enum TimedError {
-    #[error("Tracing can only be initialized once")]
-    TracingInitializationFailed,
-    #[error("Tracing finish failed: {0}")]
-    TracingFinishFailed(String),
-}
-
-type Result<T> = std::result::Result<T, TimedError>;
-
+// Keeping track of traces
 lazy_static! {
-    static ref CHAIN: Arc<Mutex<TraceCollectorChain>> = Arc::new(Mutex::new(TraceCollectorChain::new()));
-}
-
-pub fn collect(trace_record: TraceRecord) {
-    CHAIN.lock().unwrap().buffers.iter_mut().for_each(|collector|
-        collector.lock().unwrap().add(trace_record.clone()));
-}
-
-pub fn init_tracing(chain: &mut TraceCollectorChain) -> Result<()> {
-    let trace = &mut *CHAIN.lock().unwrap();
-
-    if trace.buffers.is_empty() {
-        trace.buffers.append(&mut chain.buffers);
-
-        return Ok(());
-    }
-
-    return Err(TimedError::TracingInitializationFailed);
-}
-
-#[macro_export]
-macro_rules! anonymous_collector {
-    ($closure:expr) => {
-        Box::new((|| {
-            struct Anonymous;
-            impl timed::Collector for Anonymous {
-                fn collect(&mut self, record: &timed::TraceRecord) {
-                    $closure(record);
-                }
-            }
-            Anonymous
-        })())
-    }
+    static ref TRACES: Mutex<HashMap<String, Vec<hop::Hop>>> = Mutex::new(HashMap::new());
 }
