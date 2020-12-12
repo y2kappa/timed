@@ -101,7 +101,7 @@ fn codegen_duration(options: &MacroArgs, function_name: &String) -> (Code, Code)
     // Decide if we generate duration at all
     let disabled = match options.duration {
         Some(DurationArgs { disabled, .. }) => disabled,
-        _ => true,
+        _ => false,
     };
 
     if let Some(duration_args) = &options.duration {
