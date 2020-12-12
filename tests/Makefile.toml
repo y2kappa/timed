@@ -30,9 +30,6 @@ args = ["run", "--example", "demo_tracing"]
 command = "cargo"
 args = ["run", "--example", "demo_statistics"]
 
-[tasks.run_expand]
-command = "cargo"
-args = ["run", "--bin", "tests_expand"]
 
 [tasks.tests]
 command = "cargo"

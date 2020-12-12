@@ -104,10 +104,6 @@ fn codegen_duration(options: &MacroArgs, function_name: &String) -> (Code, Code)
         _ => false,
     };
 
-    if let Some(duration_args) = &options.duration {
-        println!("{:?}", duration_args);
-    }
-
     let duration_begin = quote! {
         let __timed_start = std::time::Instant::now();
     };

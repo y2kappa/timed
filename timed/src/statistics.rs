@@ -1,4 +1,4 @@
-use crate::{Phase};
+use crate::Phase;
 use prettytable::Table;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ use crate::hop::Hop;
 struct StatisticsRecord {
     name: String,
     calls: Vec<Duration>,
-    overall_time: Duration
+    overall_time: Duration,
 }
 
 impl StatisticsRecord {
@@ -65,9 +65,7 @@ impl Eq for StatisticsRecord {}
 pub fn from(hops: &[Hop]) -> String {
     let mut stats = HashMap::new();
 
-    hops
-        .iter()
-        .for_each(|record| {
+    hops.iter().for_each(|record| {
         if let Phase::Finish(d) = record.phase {
             let entry = stats
                 .entry(record.function_name.clone())
@@ -94,23 +92,20 @@ pub fn from(hops: &[Hop]) -> String {
         .map(|(_, sr)| sr.clone())
         .collect::<Vec<StatisticsRecord>>();
 
-    stats
-        .sort_by(|a, b| b.overall_time.cmp(&a.overall_time));
+    stats.sort_by(|a, b| b.overall_time.cmp(&a.overall_time));
 
-    stats
-        .iter()
-        .for_each(|sr| {
-            table.add_row(row![
-                sr.name,
-                sr.calls.len(),
-                format!("{:?}", sr.overall_time),
-                format!("{:?}", sr.avg()),
-                format!("{:?}", sr.nth_percentile_time(1.0).unwrap()),
-                format!("{:?}", sr.nth_percentile_time(0.9).unwrap()),
-                format!("{:?}", sr.nth_percentile_time(0.5).unwrap()),
-                format!("{:?}", sr.nth_percentile_time(0.1).unwrap())
+    stats.iter().for_each(|sr| {
+        table.add_row(row![
+            sr.name,
+            sr.calls.len(),
+            format!("{:?}", sr.overall_time),
+            format!("{:?}", sr.avg()),
+            format!("{:?}", sr.nth_percentile_time(1.0).unwrap()),
+            format!("{:?}", sr.nth_percentile_time(0.9).unwrap()),
+            format!("{:?}", sr.nth_percentile_time(0.5).unwrap()),
+            format!("{:?}", sr.nth_percentile_time(0.1).unwrap())
         ]);
-        });
+    });
 
     format!("{}", table)
 }
