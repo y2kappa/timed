@@ -1,3 +1,4 @@
 /target
 Cargo.lock
-timed_proc_macros.iml
+*.iml
+*.xml

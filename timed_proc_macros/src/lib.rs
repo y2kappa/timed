@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use darling::FromMeta;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
@@ -5,38 +7,44 @@ use quote::quote;
 use syn::{AttributeArgs, ItemFn};
 
 #[derive(Debug, FromMeta)]
-struct MacroArgs {
+struct TracingArgs {
     #[darling(default)]
-    printer: Option<String>,
+    enabled: Option<bool>,
     #[darling(default)]
-    tracing: Option<bool>,
+    main: Option<String>,
 }
 
-// struct Tracing;
-// impl Drop for Tracing {
-//     fn drop(&mut self) {
-//         let traces = TRACES.lock().unwrap();
-//         println!("Begin Dumping traces:\n-----");
-//         println!("[");
-//         for i in 0..traces.len() {
-//             println!("    {}{}", traces[i], if i == traces.len() - 1 { "" } else { ","});
-//         }
-//         println!("]");
-//         println!("-----\nEnd Dumping traces");
-//     }
-// }
+#[derive(Debug, FromMeta)]
+struct DurationArgs {
+    #[darling(default)]
+    disabled: bool,
+    #[darling(default)]
+    printer: Option<String>,
+}
+
+#[derive(Debug, FromMeta)]
+struct MacroArgs {
+    #[darling(default)]
+    tracing: Option<TracingArgs>,
+    #[darling(default)]
+    duration: Option<DurationArgs>,
+}
 
 use proc_macro2::TokenStream as Code;
 
 fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, Option<Code>) {
-    if let Some(true) = options.tracing {
+    if let Some(_) = options.tracing {
         let begin = quote! {
             {
                 let ts = std::time::SystemTime::now()
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::B, name: #function_name.to_string(), ts});
+                timed::Trace::record(timed::Hop {
+                    function_name: format!("{}::{}", __timed_module_path, #function_name),
+                    timestamp: ts,
+                    phase: timed::Phase::Start
+                });
             }
         };
         let end = quote! {
@@ -45,7 +53,11 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
                     .duration_since(std::time::SystemTime::UNIX_EPOCH)
                     .unwrap()
                     .as_micros();
-                timed::Trace::collect(timed::Hop { ph: timed::Phase::E, name: #function_name.to_string(), ts});
+                timed::Trace::record(timed::Hop {
+                    function_name: format!("{}::{}", __timed_module_path, #function_name),
+                    timestamp: ts,
+                    phase: timed::Phase::Finish(__timed_elapsed)
+                });
             }
         };
         (Some(begin), Some(end))
@@ -54,17 +66,8 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
     }
 }
 
-fn codegen_duration(
-    printer: &proc_macro2::TokenStream,
-    function_name: &syn::Ident,
-) -> proc_macro2::TokenStream {
-    quote! {
-        #printer("function={} duration={:?}", stringify!(#function_name), start.elapsed());
-    }
-}
-
-fn codegen_printer(options: &MacroArgs) -> proc_macro2::TokenStream {
-    let (printer, needs_bang) = match &options.printer {
+fn codegen_printer(options: &Option<String>) -> proc_macro2::TokenStream {
+    let (printer, needs_bang) = match &options {
         Some(printer) => {
             if printer.ends_with('!') {
                 (&printer[..&printer.len() - 1], true)
@@ -87,6 +90,38 @@ fn codegen_printer(options: &MacroArgs) -> proc_macro2::TokenStream {
     }
 }
 
+fn codegen_duration(options: &MacroArgs, function_name: &String) -> (Code, Code) {
+    // Generate printer
+    let printer_options = match &options.duration {
+        Some(options) => &options.printer,
+        None => &None,
+    };
+    let printer = codegen_printer(&printer_options);
+
+    // Decide if we generate duration at all
+    let disabled = match options.duration {
+        Some(DurationArgs { disabled, .. }) => disabled,
+        _ => false,
+    };
+
+    let duration_begin = quote! {
+        let __timed_start = std::time::Instant::now();
+    };
+
+    let duration_end = if disabled {
+        quote! {
+            let __timed_elapsed = __timed_start.elapsed();
+        }
+    } else {
+        quote! {
+            let __timed_elapsed = __timed_start.elapsed();
+            #printer("function={} duration={:?}", #function_name, __timed_elapsed);
+        }
+    };
+
+    (duration_begin, duration_end)
+}
+
 /// Macro that times your function execution.
 #[proc_macro_attribute]
 pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -98,7 +133,7 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
     //! ```
     //!
     //! ```ignore
-    //! #[timed(printer = "println!")]
+    //! #[timed(duration(printer = "println!"))]
     //! ```
     // debug!("Args {:?}", args);
     let options = syn::parse_macro_input!(args as AttributeArgs);
@@ -119,21 +154,24 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
         block: body,
         ..
     } = &function;
+    let name = function.sig.ident.to_string();
 
-    let name = &function.sig.ident;
-    let printer = codegen_printer(&options);
-    let print_duration = codegen_duration(&printer, &name);
-    let (tracing_begin, tracing_end) = codegen_tracing(&options, &name.to_string());
+    let (duration_begin, duration_end) = codegen_duration(&options, &name);
+    let (tracing_begin, tracing_end) = codegen_tracing(&options, name.as_str());
 
     let result = quote! {
         #(#attrs)*
         #vis #sig {
-           #tracing_begin
-           let start = std::time::Instant::now();
-           let res = { #body };
-           #print_duration
-           #tracing_end
-           res
+            let __timed_module_path = std::module_path!();
+
+            #tracing_begin
+            #duration_begin
+            let result = { #body };
+
+            #duration_end
+            #tracing_end
+
+            result
         }
     };
 

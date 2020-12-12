@@ -2,7 +2,7 @@
 command = "cargo"
 args = ["build"]
 
-[tasks.testing]
+[tasks.all]
 dependencies = [
     "build",
 ]
