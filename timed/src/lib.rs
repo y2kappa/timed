@@ -23,7 +23,7 @@
 //!     x + y
 //! }
 //!
-//! #[timed(printer = "println!")]
+//! #[timed(duration(printer = "println!"))]
 //! async fn google()  {
 //!     // reqwest::get("https://google.com").await;
 //! }

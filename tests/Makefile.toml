@@ -35,10 +35,14 @@ args = ["run", "--example", "demo_statistics"]
 command = "cargo"
 args = ["test"]
 
-[tasks.testing]
+[tasks.all]
 dependencies = [
     "build",
-    "run_macros",
-    "run_expand",
     "tests",
+    "example_async",
+    "example_main",
+    "example_main_info",
+    "example_main_nested",
+    "example_tracing",
+    "example_statistics",
 ]

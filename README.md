@@ -26,7 +26,7 @@ fn add(x: i32, y: i32) -> i32 { x + y }
 #[timed]
 fn mul(x: i32, y: i32) -> i32 { x * y }
 
-#[timed(printer = "println!")]
+#[timed(duration(printer = "println!"))]
 fn mul_println(x: i32, y: i32) -> i32 { x * y}
 
 #[timed(printer = "info!")]
@@ -73,7 +73,7 @@ Output:
 ```
 Running main
 Calling https://type.fit/api/quotes
-Quote of the day: 
+Quote of the day:
 Genius is one percent inspiration and ninety-nine percent perspiration. - Thomas Edison
 function=get_random_quote duration=455.291753ms
 function=main duration=456.452412ms
@@ -143,6 +143,7 @@ See [TODO](TODO.md)
 To build specific packages / examples / binaries, follow the usual workflow. To do a full build on everything, run the below:
 
 ```shell script
-$ cargo make
-$ cargo make testing
+$ cd tests && cargo make all
+$ cd timed && cargo make all
+$ cd timed_proc_macros && cargo make all
 ```
