@@ -12,12 +12,12 @@ fn mul(x: i32, y: i32) -> i32 {
     x * y
 }
 
-#[timed(printer = "println!")]
+#[timed(duration(printer = "println!"))]
 fn mul_println(x: i32, y: i32) -> i32 {
     x * y
 }
 
-#[timed(printer = "info!")]
+#[timed(duration(printer = "info!"))]
 fn mul_info(x: i32, y: i32) -> i32 {
     x * y
 }

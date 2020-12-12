@@ -1,10 +1,6 @@
-
-use crate::hop::Hop;
 use crate::chrome_trace;
+use crate::hop::Hop;
 use crate::statistics;
-
-use thiserror::Error;
-use std::collections::HashMap;
 
 pub struct Trace {
     id: String,
@@ -12,7 +8,6 @@ pub struct Trace {
 }
 
 impl Trace {
-
     fn register(id: &str) {
         crate::TRACES.lock().unwrap().insert(id.to_string(), vec![]);
     }
@@ -26,7 +21,7 @@ impl Trace {
     pub fn new(id: &str) -> Self {
         let trace = Self {
             id: id.to_string(),
-            start_timestamp: 0
+            start_timestamp: 0,
         };
 
         Trace::register(id);

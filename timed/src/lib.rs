@@ -45,22 +45,22 @@
 //!
 //! ```
 
-use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use std::sync::Mutex;
 
-#[macro_use] extern crate lazy_static;
-#[macro_use] extern crate prettytable;
-#[macro_use] extern crate thiserror;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate prettytable;
 
 mod chrome_trace;
-mod error;
 mod hop;
-mod trace;
 mod statistics;
+mod trace;
 
 // export Trace
+pub use hop::{Hop, Phase};
 pub use trace::Trace;
-pub use hop::{Phase, Hop};
 
 // Re-exporting the timed proc macro
 pub use timed_proc_macros::timed;

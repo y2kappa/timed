@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use darling::FromMeta;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
@@ -13,13 +15,19 @@ struct TracingArgs {
 }
 
 #[derive(Debug, FromMeta)]
+struct DurationArgs {
+    #[darling(default)]
+    disabled: bool,
+    #[darling(default)]
+    printer: Option<String>,
+}
+
+#[derive(Debug, FromMeta)]
 struct MacroArgs {
     #[darling(default)]
     tracing: Option<TracingArgs>,
-    // An idea printer could be a 'sink' so it can either println!() each or
-    // we can collect the data into a vector
     #[darling(default)]
-    printer: Option<String>,
+    duration: Option<DurationArgs>,
 }
 
 use proc_macro2::TokenStream as Code;
@@ -58,17 +66,8 @@ fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, O
     }
 }
 
-fn codegen_duration(
-    printer: &proc_macro2::TokenStream,
-    function_name: &String,
-) -> proc_macro2::TokenStream {
-    quote! {
-        #printer("function={} duration={:?}", #function_name, __timed_elapsed);
-    }
-}
-
-fn codegen_printer(options: &MacroArgs) -> proc_macro2::TokenStream {
-    let (printer, needs_bang) = match &options.printer {
+fn codegen_printer(options: &Option<String>) -> proc_macro2::TokenStream {
+    let (printer, needs_bang) = match &options {
         Some(printer) => {
             if printer.ends_with('!') {
                 (&printer[..&printer.len() - 1], true)
@@ -91,6 +90,42 @@ fn codegen_printer(options: &MacroArgs) -> proc_macro2::TokenStream {
     }
 }
 
+fn codegen_duration(options: &MacroArgs, function_name: &String) -> (Code, Code) {
+    // Generate printer
+    let printer_options = match &options.duration {
+        Some(options) => &options.printer,
+        None => &None,
+    };
+    let printer = codegen_printer(&printer_options);
+
+    // Decide if we generate duration at all
+    let disabled = match options.duration {
+        Some(DurationArgs { disabled, .. }) => disabled,
+        _ => true,
+    };
+
+    if let Some(duration_args) = &options.duration {
+        println!("{:?}", duration_args);
+    }
+
+    let duration_begin = quote! {
+        let __timed_start = std::time::Instant::now();
+    };
+
+    let duration_end = if disabled {
+        quote! {
+            let __timed_elapsed = __timed_start.elapsed();
+        }
+    } else {
+        quote! {
+            let __timed_elapsed = __timed_start.elapsed();
+            #printer("function={} duration={:?}", #function_name, __timed_elapsed);
+        }
+    };
+
+    (duration_begin, duration_end)
+}
+
 /// Macro that times your function execution.
 #[proc_macro_attribute]
 pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -102,7 +137,7 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
     //! ```
     //!
     //! ```ignore
-    //! #[timed(printer = "println!")]
+    //! #[timed(duration(printer = "println!"))]
     //! ```
     // debug!("Args {:?}", args);
     let options = syn::parse_macro_input!(args as AttributeArgs);
@@ -124,25 +159,23 @@ pub fn timed(args: TokenStream, input: TokenStream) -> TokenStream {
         ..
     } = &function;
     let name = function.sig.ident.to_string();
-    let printer = codegen_printer(&options);
-    let print_duration = codegen_duration(&printer, &name);
+
+    let (duration_begin, duration_end) = codegen_duration(&options, &name);
     let (tracing_begin, tracing_end) = codegen_tracing(&options, name.as_str());
 
     let result = quote! {
         #(#attrs)*
         #vis #sig {
-           let __timed_module_path = std::module_path!();
+            let __timed_module_path = std::module_path!();
 
-           #tracing_begin
+            #tracing_begin
+            #duration_begin
+            let result = { #body };
 
-           let __timed_start = std::time::Instant::now();
-           let __timed_res = { #body };
-           let __timed_elapsed = __timed_start.elapsed();
+            #duration_end
+            #tracing_end
 
-           #tracing_end
-           #print_duration
-
-           __timed_res
+            result
         }
     };
 
