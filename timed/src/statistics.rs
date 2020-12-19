@@ -31,7 +31,7 @@ impl StatisticsRecord {
             i -= 1;
         }
 
-        return self.calls.get(i);
+        self.calls.get(i)
     }
 
     pub fn avg(&self) -> Duration {
@@ -69,7 +69,7 @@ pub fn from(hops: &[Hop]) -> String {
         if let Phase::Finish(d) = record.phase {
             let entry = stats
                 .entry(record.function_name.clone())
-                .or_insert(StatisticsRecord::new(record.function_name.clone()));
+                .or_insert_with(|| StatisticsRecord::new(record.function_name.clone()));
             entry.calls.push(d);
             entry.overall_time += d;
         }
