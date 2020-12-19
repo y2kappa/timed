@@ -1,7 +1,7 @@
 on: [push, pull_request]
 name: Clippy
 jobs:
-  clippy_check:
+  clippy_and_fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -9,6 +9,11 @@ jobs:
         with:
             toolchain: stable
             components: clippy
-      - uses: actions-rs/clippy@master
+      - name: Cargo Clippy Check 
+        uses: actions-rs/clippy@master
         with:
           args: --all-features --all-targets -- -D warnings
+      - name: Cargo Fmt Check
+        uses: icepuma/rust-action@master
+        with:
+          args: cargo fmt --all -- --check
