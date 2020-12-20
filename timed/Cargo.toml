@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2018"
 description = "Macros to time function execution"
 license = "MIT OR Apache-2.0"
-authors = ["Marius Ciubotariu <marius.ciubotariu@gmail.com>"]
+authors = ["Marius Ciubotariu <marius.ciubotariu@gmail.com>", "Yoni Peleg <yoni@codota.com>"]
 readme = "../README.md"
 repository = "https://github.com/y2kappa/timed"
 
