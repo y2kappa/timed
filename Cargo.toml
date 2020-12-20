@@ -1,7 +1,6 @@
 [workspace]
-
 members = [
+    "tests",
     "timed",
-    "timed_proc_macros",
-    "tests"
+    "timed_proc_macros"
 ]

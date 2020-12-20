@@ -1,6 +1,6 @@
 [package]
 name = "timed_proc_macros"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Marius Ciubotariu <marius.ciubotariu@gmail.com>"]
 edition = "2018"
 description = "Macros to time function execution (Macros)"

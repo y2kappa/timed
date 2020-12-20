@@ -1,22 +1,28 @@
 use timed::timed;
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 #[timed]
-fn add(x: i32, y: i32) -> i32 { x + y }
+fn add(x: i32, y: i32) -> i32 {
+    x + y
+}
 
 #[timed]
-fn mul(x: i32, y: i32) -> i32 { x * y }
+fn mul(x: i32, y: i32) -> i32 {
+    x * y
+}
 
-#[timed(printer = "println!")]
-fn mul_println(x: i32, y: i32) -> i32 { x * y}
+#[timed(duration(printer = "println!"))]
+fn mul_println(x: i32, y: i32) -> i32 {
+    x * y
+}
 
-#[timed(printer = "info!")]
-fn mul_info(x: i32, y: i32) -> i32 { x * y }
+#[timed(duration(printer = "info!"))]
+fn mul_info(x: i32, y: i32) -> i32 {
+    x * y
+}
 
-
-#[test]
-fn timing() {
-
+fn main() {
     pretty_env_logger::init();
 
     assert_eq!(add(1, 2), 3);

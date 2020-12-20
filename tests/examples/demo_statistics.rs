@@ -4,7 +4,6 @@ mod one {
             #[timed::timed(tracing(enabled = true), duration(disabled = true))]
             pub(crate) fn deep() {
                 // println!("Deep");
-                std::thread::sleep(std::time::Duration::from_millis(1));
             }
         }
     }
@@ -26,7 +25,9 @@ fn baz() {
 
 #[timed::timed(tracing(enabled = true), duration(disabled = true))]
 fn bar() {
-    baz();
+    for _ in 0..10 {
+        baz();
+    }
 }
 
 #[timed::timed(tracing(enabled = true), duration(disabled = true))]
@@ -36,5 +37,5 @@ fn main() {
     foo();
     std::thread::sleep(std::time::Duration::from_millis(10));
 
-    println!("{}", trace.chrome_tracing());
+    println!("{}", trace.statistics());
 }

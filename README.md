@@ -7,7 +7,9 @@
 
 ✅ Custom printers, like `println!`, `info!`, or your own function.
 
-✅ New! Profile your program with chrome tracing, build a flamegraph.
+✅ Profile your program with chrome tracing, build a flamegraph.
+
+✅ New! Show timing statistics between your functions
 
 ### Usage `duration`
 
@@ -27,10 +29,10 @@ fn add(x: i32, y: i32) -> i32 { x + y }
 #[timed]
 fn mul(x: i32, y: i32) -> i32 { x * y }
 
-#[timed(printer = "println!")]
+#[timed(duration(printer = "println!"))]
 fn mul_println(x: i32, y: i32) -> i32 { x * y}
 
-#[timed(printer = "info!")]
+#[timed(duration(printer = "info!"))]
 fn mul_info(x: i32, y: i32) -> i32 { x * y }
 
 
@@ -74,7 +76,7 @@ Output:
 ```
 Running main
 Calling https://type.fit/api/quotes
-Quote of the day: 
+Quote of the day:
 Genius is one percent inspiration and ninety-nine percent perspiration. - Thomas Edison
 function=get_random_quote duration=455.291753ms
 function=main duration=456.452412ms
@@ -83,37 +85,38 @@ function=main duration=456.452412ms
 ### Usage chrome::tracing
 
 ```rust
-#[timed::timed(tracing = true)]
+#[timed::timed(tracing(enabled = true), duration(disabled = true))]
 fn foo() {
     bar();
     baz();
 }
 
-#[timed::timed(tracing = true)]
+#[timed::timed(tracing(enabled = true), duration(disabled = true))]
 fn baz() {
     println!("Hello")
 }
 
-#[timed::timed(tracing = true)]
+#[timed::timed(tracing(enabled = true), duration(disabled = true))]
 fn bar() {
     baz();
 }
 
-#[timed::timed(tracing = true)]
+#[timed::timed(tracing(enabled = true), duration(disabled = true))]
 fn main() {
-    timed::init_tracing!("Main");
+    let trace = timed::TraceOptions::new()
+        .with_chrome_trace(|x: &str| println!("{}", x))
+        .build_named("Main");
+
     foo();
+
+    trace.finish();
 }
 
 ```
 
 ```shell script
 Hello
-function=baz duration=27.264µs
-function=bar duration=45.606µs
 Hello
-function=baz duration=1.625µs
-function=foo duration=57.556µs
 [
     { "pid": 0, "ts": 1603026625248670,  "ph": "B", "name": "foo" },
     { "pid": 0, "ts": 1603026625248676,  "ph": "B", "name": "bar" },
@@ -130,6 +133,36 @@ function=foo duration=57.556µs
 Save the json dump between `[` and `]` to file `tracing.json` then open in Chrome `chrome://tracing` and drag the file:
 <img src="docs/tracing_demo.png" />
 
+### Usage statistics
+
+```rust
+#[timed::timed(tracing(enabled = true), duration(disabled = true))]
+fn main() {
+    let trace = timed::Trace::new("Main");
+
+    foo();
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    println!("{}", trace.statistics());
+}
+```
+
+```shell script
++----------------------------------------+-------+--------------+-----------+-----------+-----------+-----------+-----------+
+| function name                          | calls | overall time | avg time  | max time  | p90 time  | p50 time  | p10 time  |
++----------------------------------------+-------+--------------+-----------+-----------+-----------+-----------+-----------+
+| Main                                   | 1     | 10.955ms     | 10.955ms  | 10.955ms  | 10.955ms  | 10.955ms  | 10.955ms  |
++----------------------------------------+-------+--------------+-----------+-----------+-----------+-----------+-----------+
+| demo_statistics::foo                   | 1     | 112.184µs    | 112.184µs | 112.184µs | 112.184µs | 112.184µs | 112.184µs |
++----------------------------------------+-------+--------------+-----------+-----------+-----------+-----------+-----------+
+| demo_statistics::bar                   | 1     | 99.452µs     | 99.452µs  | 99.452µs  | 99.452µs  | 99.452µs  | 99.452µs  |
++----------------------------------------+-------+--------------+-----------+-----------+-----------+-----------+-----------+
+| demo_statistics::baz                   | 11    | 85.069µs     | 7.733µs   | 8.403µs   | 5.738µs   | 5.895µs   | 19.525µs  |
++----------------------------------------+-------+--------------+-----------+-----------+-----------+-----------+-----------+
+| demo_statistics::one::two::three::deep | 33    | 691ns        | 20ns      | 25ns      | 23ns      | 17ns      | 23ns      |
++----------------------------------------+-------+--------------+-----------+-----------+-----------+-----------+-----------+
+```
+
 ## Contribution
 Contributions are welcome. Please submit PR.
 See [TODO](TODO.md)
@@ -139,6 +172,7 @@ See [TODO](TODO.md)
 To build specific packages / examples / binaries, follow the usual workflow. To do a full build on everything, run the below:
 
 ```shell script
-$ cargo make
-$ cargo make testing
+$ cd tests && cargo make all
+$ cd timed && cargo make all
+$ cd timed_proc_macros && cargo make all
 ```
