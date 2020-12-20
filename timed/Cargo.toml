@@ -1,14 +1,12 @@
 [package]
 name = "timed"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2018"
 description = "Macros to time function execution"
 license = "MIT OR Apache-2.0"
 authors = ["Marius Ciubotariu <marius.ciubotariu@gmail.com>", "Yoni Peleg <yoni@codota.com>"]
 readme = "../README.md"
 repository = "https://github.com/y2kappa/timed"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 timed_proc_macros = { version = "0.2.0" }
