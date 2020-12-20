@@ -17,10 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
-        with:
-            toolchain: stable
-            components: fmt
       - name: Cargo Fmt Check
         uses: icepuma/rust-action@master
         with:
