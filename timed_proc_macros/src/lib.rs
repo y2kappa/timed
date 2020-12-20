@@ -33,7 +33,7 @@ struct MacroArgs {
 use proc_macro2::TokenStream as Code;
 
 fn codegen_tracing(options: &MacroArgs, function_name: &str) -> (Option<Code>, Option<Code>) {
-    if let Some(_) = options.tracing {
+    if options.tracing.is_some() {
         let begin = quote! {
             {
                 let ts = std::time::SystemTime::now()
@@ -90,7 +90,7 @@ fn codegen_printer(options: &Option<String>) -> proc_macro2::TokenStream {
     }
 }
 
-fn codegen_duration(options: &MacroArgs, function_name: &String) -> (Code, Code) {
+fn codegen_duration(options: &MacroArgs, function_name: &str) -> (Code, Code) {
     // Generate printer
     let printer_options = match &options.duration {
         Some(options) => &options.printer,

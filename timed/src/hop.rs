@@ -6,13 +6,17 @@ pub enum Phase {
     Finish(Duration),
 }
 
-impl Phase {
+impl std::fmt::Display for Phase {
     // These are B and E for chrome tracing
-    pub(crate) fn to_string(&self) -> String {
-        match self {
-            Phase::Start => "B".to_string(),
-            Phase::Finish(_) => "E".to_string(),
-        }
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Phase::Start => "B".to_string(),
+                Phase::Finish(_) => "E".to_string(),
+            }
+        )
     }
 }
 

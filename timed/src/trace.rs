@@ -58,7 +58,7 @@ impl Trace {
 
     pub fn chrome_tracing(&self) -> String {
         let mut traces = crate::TRACES.lock().unwrap();
-        let entries = traces.entry(self.id.clone()).or_insert(vec![]);
+        let entries = traces.entry(self.id.clone()).or_insert_with(Vec::new);
 
         entries.push(self.generate_current_end_hop());
 
@@ -67,7 +67,7 @@ impl Trace {
 
     pub fn statistics(&self) -> String {
         let mut traces = crate::TRACES.lock().unwrap();
-        let entries = traces.entry(self.id.clone()).or_insert(vec![]);
+        let entries = traces.entry(self.id.clone()).or_insert_with(Vec::new);
 
         entries.push(self.generate_current_end_hop());
 
