@@ -10,8 +10,9 @@ jobs:
             toolchain: stable
             components: clippy
       - name: Cargo Clippy Check 
-        uses: actions-rs/clippy@master
+        uses: actions-rs/clippy-check@v1
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features --all-targets -- -D warnings
   fmt:
     runs-on: ubuntu-latest

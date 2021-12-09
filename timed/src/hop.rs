@@ -32,7 +32,7 @@ impl Hop {
         format!(
             "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
             self.timestamp,
-            self.phase.to_string(),
+            self.phase,
             self.function_name
         )
     }
