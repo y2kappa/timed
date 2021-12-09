@@ -22,15 +22,10 @@ impl StatisticsRecord {
         }
     }
 
-    pub fn nth_percentile_time(&self, percentile: f32) -> Option<&Duration> {
-        let mut calls = self.calls.clone();
-        calls.sort();
+    pub fn nth_percentile_time(&mut self, percentile: f32) -> Option<&Duration> {
+        self.calls.sort_by_cached_key(|a| a.as_nanos());
 
-        let mut i = (percentile * self.calls.len() as f32).round() as usize;
-        if i > 0 {
-            i -= 1;
-        }
-
+        let i = ((percentile * self.calls.len() as f32).round() - 1.).max(0.) as usize;
         self.calls.get(i)
     }
 
@@ -50,7 +45,7 @@ impl Ord for StatisticsRecord {
 
 impl PartialOrd for StatisticsRecord {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
+        Some(self.cmp(other))
     }
 }
 
@@ -94,7 +89,7 @@ pub fn from(hops: &[Hop]) -> String {
 
     stats.sort_by(|a, b| b.overall_time.cmp(&a.overall_time));
 
-    stats.iter().for_each(|sr| {
+    stats.iter_mut().for_each(|sr| {
         table.add_row(row![
             sr.name,
             sr.calls.len(),

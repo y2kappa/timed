@@ -31,9 +31,7 @@ impl Hop {
     pub fn to_chrome_trace(&self) -> String {
         format!(
             "{{ \"pid\": 0, \"ts\": {},  \"ph\": \"{}\", \"name\": \"{}\" }}",
-            self.timestamp,
-            self.phase.to_string(),
-            self.function_name
+            self.timestamp, self.phase, self.function_name
         )
     }
 }

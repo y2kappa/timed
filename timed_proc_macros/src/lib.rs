@@ -9,9 +9,9 @@ use syn::{AttributeArgs, ItemFn};
 #[derive(Debug, FromMeta)]
 struct TracingArgs {
     #[darling(default)]
-    enabled: Option<bool>,
+    _enabled: Option<bool>,
     #[darling(default)]
-    main: Option<String>,
+    _main: Option<String>,
 }
 
 #[derive(Debug, FromMeta)]
@@ -96,7 +96,7 @@ fn codegen_duration(options: &MacroArgs, function_name: &str) -> (Code, Code) {
         Some(options) => &options.printer,
         None => &None,
     };
-    let printer = codegen_printer(&printer_options);
+    let printer = codegen_printer(printer_options);
 
     // Decide if we generate duration at all
     let disabled = match options.duration {
