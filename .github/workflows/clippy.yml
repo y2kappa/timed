@@ -19,6 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Cargo Fmt Check
-        uses: icepuma/rust-action@master
+        uses: actions-rs/cargo@v1
         with:
-          args: cargo fmt --all -- --check
+          command: fmt
+          args: --all -- --check
