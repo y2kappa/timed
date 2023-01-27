@@ -13,4 +13,4 @@ timed_proc_macros = { version = "0.2.0" }
 # timed_proc_macros = { path = "../timed_proc_macros" }
 lazy_static = "1.4.0"
 thiserror = "1.0.21"
-prettytable-rs = "^0.8"
+prettytable-rs = "^0.10"
